@@ -26,8 +26,16 @@ app = Flask(__name__)
 CORS(app) # Enable CORS for frontend communication
 
 @app.route('/')
-def serve_index():
-    return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'index.html')
+@app.route('/<path:path>')
+def serve_index_and_static(path='index.html'):
+    directory = os.path.dirname(os.path.abspath(__file__))
+    # Ruxsat etilgan fayl turlarini xavfsizlik uchun tekshiramiz
+    if path != 'index.html' and not path.endswith('.js') and not path.endswith('.css') and not path.endswith('.html'):
+        return jsonify({"error": "Not found"}), 404
+        
+    if os.path.exists(os.path.join(directory, path)):
+        return send_from_directory(directory, path)
+    return send_from_directory(directory, 'index.html')
 
 # Vercel Serverless environment has a read-only filesystem except for /tmp
 if os.environ.get('VERCEL') == '1':
