@@ -29,7 +29,18 @@ CORS(app) # Enable CORS for frontend communication
 def serve_index():
     return send_from_directory(os.path.dirname(os.path.abspath(__file__)), 'index.html')
 
-DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "litmaps_clone.db")
+# Vercel Serverless environment has a read-only filesystem except for /tmp
+if os.environ.get('VERCEL') == '1':
+    DB_FILE = "/tmp/litmaps_clone.db"
+    original_db = os.path.join(os.path.dirname(os.path.abspath(__file__)), "litmaps_clone.db")
+    if os.path.exists(original_db) and not os.path.exists(DB_FILE):
+        import shutil
+        try:
+            shutil.copy2(original_db, DB_FILE)
+        except Exception:
+            pass
+else:
+    DB_FILE = os.path.join(os.path.dirname(os.path.abspath(__file__)), "litmaps_clone.db")
 
 def init_db():
     conn = sqlite3.connect(DB_FILE)
