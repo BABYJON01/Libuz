@@ -1,0 +1,1487 @@
+<!DOCTYPE html>
+<html lang="uz">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Litmaps Klon - Ilmiy Maqolalar Tarmog'i</title>
+    <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/vanta@latest/dist/vanta.net.min.js"></script>
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #0f172a;
+            --panel-bg: rgba(30, 41, 59, 0.7);
+            --text-color: #f8fafc;
+            --accent: #3b82f6;
+            --accent-hover: #2563eb;
+            --border: rgba(255, 255, 255, 0.1);
+            --node-main: #3b82f6;
+            --node-ref: #94a3b8;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            height: 100vh;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling (Glassmorphism) */
+        .sidebar {
+            width: 380px;
+            min-width: 380px;
+            height: 100%;
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border-right: 1px solid var(--border);
+            display: flex;
+            flex-direction: column;
+            z-index: 10;
+            box-shadow: 4px 0 24px rgba(0, 0, 0, 0.5);
+        }
+
+        .header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            background: linear-gradient(135deg, #60a5fa, #a78bfa);
+            -webkit-background-clip: text;
+            background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin-bottom: 16px;
+        }
+
+        .search-container {
+            position: relative;
+        }
+
+        .search-input {
+            width: 100%;
+            padding: 12px 16px;
+            border-radius: 8px;
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            color: white;
+            font-size: 14px;
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        .search-input:focus {
+            border-color: var(--accent);
+        }
+
+        .search-button {
+            margin-top: 12px;
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            background: var(--accent);
+            border: none;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.2s;
+        }
+
+        .search-button:hover {
+            background: var(--accent-hover);
+        }
+
+        .results-container {
+            flex-grow: 1;
+            overflow-y: auto;
+            padding: 16px;
+        }
+
+        .result-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            padding: 16px;
+            margin-bottom: 12px;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .result-item:hover {
+            background: rgba(255, 255, 255, 0.08);
+            transform: translateY(-2px);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+
+        .paper-title {
+            font-size: 14px;
+            font-weight: 500;
+            margin-bottom: 8px;
+            line-height: 1.4;
+            color: #e2e8f0;
+        }
+
+        .paper-meta {
+            font-size: 12px;
+            color: #94a3b8;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .paper-authors {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 8px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        /* Graph Area */
+        .workspace {
+            flex-grow: 1;
+            position: relative;
+            background-color: transparent;
+            /* Changed to transparent so particles show */
+        }
+
+        #network-graph {
+            width: 100%;
+            height: 100%;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        /* Loading Overlay */
+        .loader-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(15, 23, 42, 0.8);
+            backdrop-filter: blur(4px);
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            z-index: 20;
+            display: none;
+        }
+
+        .loader {
+            width: 48px;
+            height: 48px;
+            border: 4px solid var(--border);
+            border-top-color: var(--accent);
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+
+        .loader-text {
+            margin-top: 16px;
+            font-size: 14px;
+            color: #94a3b8;
+        }
+
+        /* Details Panel */
+        .details-panel {
+            position: absolute;
+            bottom: 24px;
+            right: 24px;
+            width: 320px;
+            background: var(--panel-bg);
+            backdrop-filter: blur(16px);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            display: none;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+            z-index: 15;
+            animation: slideIn 0.3s ease-out;
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translateY(20px);
+                opacity: 0;
+            }
+
+            to {
+                transform: translateY(0);
+                opacity: 1;
+            }
+        }
+
+        .details-title {
+            font-size: 16px;
+            font-weight: 600;
+            margin-bottom: 12px;
+            line-height: 1.4;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 6px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+        }
+
+        ::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Advanced Filter Panel */
+        .filter-panel-container {
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
+            padding: 20px 24px;
+            height: 100%;
+            overflow-y: auto;
+            position: relative;
+        }
+
+        .filter-header-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .filter-form {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            padding-bottom: 80px;
+            /* space for fixed button */
+        }
+
+        .f-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            padding-bottom: 16px;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        }
+
+        .f-label-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 13px;
+            font-weight: 500;
+            color: #cbd5e1;
+        }
+
+        .f-label {
+            display: flex;
+            align-items: center;
+            gap: 6px;
+        }
+
+        .f-reset {
+            cursor: pointer;
+            color: #64748b;
+            font-size: 16px;
+            padding: 0 4px;
+        }
+
+        .f-reset:hover {
+            color: #f8fafc;
+        }
+
+        .f-inputs-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .f-input {
+            background: rgba(15, 23, 42, 0.6);
+            border: 1px solid var(--border);
+            color: white;
+            padding: 10px 12px;
+            border-radius: 6px;
+            font-size: 13px;
+            outline: none;
+            transition: 0.2s;
+        }
+
+        .f-input:focus {
+            border-color: var(--accent);
+        }
+
+        .f-input.full-w {
+            width: 100%;
+        }
+
+        .f-input.short {
+            width: 60px;
+            text-align: center;
+        }
+
+        .f-input-with-hint {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .f-input-with-hint input {
+            padding-right: 100px;
+        }
+
+        .f-hint {
+            position: absolute;
+            right: 10px;
+            font-size: 12px;
+            color: #94a3b8;
+            cursor: pointer;
+            background: transparent;
+            border: none;
+        }
+
+        .f-row-split {
+            display: flex;
+            gap: 16px;
+        }
+
+        .f-half {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        .f-checkbox-group {
+            display: flex;
+            gap: 10px;
+            font-size: 13px;
+            color: #cbd5e1;
+            align-items: center;
+            margin-top: 4px;
+        }
+
+        .form-bottom-fixed {
+            position: sticky;
+            bottom: 0;
+            left: 0;
+            width: 100%;
+            padding: 10px 0;
+            background: var(--panel-bg);
+            border-top: 1px solid var(--border);
+            backdrop-filter: blur(16px);
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+            z-index: 10;
+        }
+
+        .apply-btn {
+            width: 100%;
+            padding: 12px;
+            border-radius: 8px;
+            background: #2563eb;
+            border: none;
+            color: white;
+            font-weight: 500;
+            cursor: pointer;
+            font-size: 14px;
+            transition: 0.2s;
+        }
+
+        .apply-btn:hover {
+            background: #1d4ed8;
+        }
+
+        .back-to-results-btn {
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            background: transparent;
+            border: 1px solid var(--border);
+            color: #cbd5e1;
+            cursor: pointer;
+            font-size: 13px;
+            transition: 0.2s;
+        }
+
+        .back-to-results-btn:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+
+        .results-panel-container {
+            display: flex;
+            flex-direction: column;
+            height: 100%;
+        }
+
+        .results-header {
+            padding: 24px;
+            border-bottom: 1px solid var(--border);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .results-header h2 {
+            font-size: 18px;
+            font-weight: 500;
+        }
+
+        .edit-filters-btn {
+            background: rgba(255, 255, 255, 0.1);
+            border: none;
+            color: #cbd5e1;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            cursor: pointer;
+            transition: 0.2s;
+        }
+
+        .edit-filters-btn:hover {
+            background: rgba(255, 255, 255, 0.2);
+        }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .modal-content {
+            background: var(--bg-color);
+            border: 1px solid var(--border);
+            border-radius: 12px;
+            padding: 24px;
+            width: 320px;
+            position: relative;
+            color: white;
+            box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
+        }
+
+        .modal-content h2 {
+            font-size: 18px;
+            margin-bottom: 16px;
+            font-weight: 500;
+        }
+
+        .close-modal {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: transparent;
+            border: none;
+            color: #94a3b8;
+            font-size: 20px;
+            cursor: pointer;
+        }
+
+        .admin-user-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px;
+            border-bottom: 1px solid var(--border);
+            align-items: center;
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+
+        .delete-user-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 6px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        /* Author Profile & Download Button */
+        .author-profile-card {
+            background: linear-gradient(145deg, rgba(30, 41, 59, 0.7), rgba(15, 23, 42, 0.9));
+            border: 1px solid rgba(148, 163, 184, 0.1);
+            border-radius: 12px;
+            padding: 20px;
+            margin-bottom: 24px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+
+        .author-name {
+            font-size: 20px;
+            font-weight: 600;
+            color: white;
+            margin: 0 0 8px 0;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .author-aliases {
+            font-size: 13px;
+            color: #94a3b8;
+            margin: 0 0 12px 0;
+            font-style: italic;
+        }
+
+        .author-bio {
+            font-size: 14px;
+            color: #cbd5e1;
+            line-height: 1.6;
+            margin: 0;
+            display: -webkit-box;
+            -webkit-line-clamp: 4;
+            line-clamp: 4;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+        }
+
+        .download-btn {
+            display: inline-flex;
+            align-items: center;
+            gap: 8px;
+            background: #10b981;
+            color: white;
+            text-decoration: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            margin-top: 16px;
+            transition: all 0.2s;
+            border: none;
+            cursor: pointer;
+        }
+
+        /* Social Auth */
+        .social-btn {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            width: 100%;
+            padding: 10px;
+            border-radius: 8px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border);
+            color: white;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+            margin-bottom: 8px;
+        }
+
+        .social-btn:hover {
+            background: rgba(255, 255, 255, 0.1);
+        }
+
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            text-align: center;
+            margin: 16px 0;
+            color: #64748b;
+            font-size: 13px;
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            border-bottom: 1px solid var(--border);
+        }
+
+        .auth-divider:not(:empty)::before {
+            margin-right: .25em;
+        }
+
+        .auth-divider:not(:empty)::after {
+            margin-left: .25em;
+        }
+
+        /* WebGL Interactive Background */
+        #vanta-bg {
+            position: fixed;
+            width: 100vw;
+            height: 100vh;
+            top: 0;
+            left: 0;
+            z-index: 1;
+            /* Allow clicks to pass through to the UI elements */
+            pointer-events: none;
+        }
+
+        /* Update sidebar and other containers to sit above particles */
+        .sidebar {
+            z-index: 10;
+        }
+
+        .workspace {
+            z-index: 5;
+        }
+
+        /* Ensure graph is interactive and above particles */
+        .workspace * {
+            z-index: 5;
+        }
+
+        /* Autocomplete Suggestions */
+        .search-container {
+            position: relative;
+        }
+
+        .suggestions-dropdown {
+            position: absolute;
+            top: 50px;
+            left: 0;
+            width: 100%;
+            background: rgba(30, 41, 59, 0.95);
+            backdrop-filter: blur(8px);
+            border: 1px solid var(--border);
+            border-radius: 8px;
+            max-height: 250px;
+            overflow-y: auto;
+            z-index: 50;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+            display: none;
+        }
+
+        .suggestion-item {
+            padding: 10px 14px;
+            cursor: pointer;
+            font-size: 13px;
+            border-bottom: 1px solid var(--border);
+            color: #cbd5e1;
+            transition: background 0.2s;
+        }
+
+        .suggestion-item:last-child {
+            border-bottom: none;
+        }
+
+        .suggestion-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+            color: white;
+        }
+
+        .suggestion-match {
+            color: var(--accent);
+            font-weight: 500;
+        }
+    </style>
+</head>
+
+<body>
+    <!-- Vanta WebGL Background -->
+    <div id="vanta-bg"></div>
+
+    <div class="sidebar">
+        <!-- Always visible Search Header -->
+        <div class="header">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h1 style="margin: 0; font-size: 24px;">Litmaps</h1>
+                <div style="display: flex; gap: 8px;">
+                    <button class="edit-filters-btn" id="login-btn-header"
+                        style="background: var(--accent); color: white;" onclick="openAuthModal()">Kirish</button>
+                    <button class="edit-filters-btn" id="admin-btn" style="display:none;"
+                        onclick="openAdminPanel()">Admin</button>
+                </div>
+            </div>
+            <form id="main-search-form" class="search-container" autocomplete="off">
+                <input type="text" id="main-search-input" class="search-input"
+                    placeholder="Maqola mavzusini kiriting..." required autocomplete="off">
+                <div id="search-suggestions" class="suggestions-dropdown"></div>
+                <div style="display: flex; gap: 8px; margin-top: 12px;">
+                    <button type="submit" class="search-button" style="margin: 0; flex: 1;">Qidirish</button>
+                    <button type="button" id="toggle-filter-btn" class="edit-filters-btn"
+                        style="margin: 0; flex: 1; padding: 12px; font-size: 14px;">⚙️ Filtrlar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Main Filter Panel -->
+        <div id="filter-panel" class="filter-panel-container" style="display:none;">
+            <div class="filter-header-top">
+                <h2 style="font-size: 18px; font-weight: 500;">Sozlamalarni o'rganish</h2>
+                <div style="font-size: 14px; display: flex; gap: 8px; cursor: pointer; color: #94a3b8;">
+                    <span>💾</span><span>Yuklash</span>
+                </div>
+            </div>
+
+            <form id="advanced-search-form" class="filter-form">
+
+                <!-- Nashr qilingan oralig'i -->
+                <div class="f-group">
+                    <div class="f-label-row">
+                        <span class="f-label">📅 Nashr qilingan oralig'i</span>
+                        <span class="f-reset"
+                            onclick="document.getElementById('year-from').value=''; document.getElementById('year-to').value='';">↺</span>
+                    </div>
+                    <div class="f-inputs-row">
+                        <input type="number" id="year-from" placeholder="YYYY" class="f-input">
+                        <span>-</span>
+                        <input type="number" id="year-to" placeholder="YYYY" class="f-input">
+                    </div>
+                </div>
+
+                <!-- Sarlavha + Abstrakt -->
+                <div class="f-group">
+                    <div class="f-label-row">
+                        <span class="f-label">🔍 Sarlavha + Abstrakt kalit so'zlar</span>
+                        <span class="f-reset" onclick="document.getElementById('search-input').value='';">↺</span>
+                    </div>
+                    <div class="f-input-with-hint">
+                        <input type="text" id="search-input" class="f-input full-w"
+                            placeholder="Kalit so'rovni kiriting...">
+                        <span class="f-hint">💡 Maslahatlar</span>
+                    </div>
+                </div>
+
+                <!-- Tillar -->
+                <div class="f-group" style="padding-bottom: 8px; border-bottom: none;">
+                    <div class="f-label-row">
+                        <span class="f-label">🌐 Qaysi tildagi maqolalar?</span>
+                    </div>
+                    <div style="display:flex; flex-direction: column; gap: 8px; margin-top: 8px;">
+                        <label style="display:flex; align-items:center; gap:8px; font-size: 14px; cursor: pointer;">
+                            <input type="radio" name="lang-filter" value="" checked style="width: 16px; height: 16px;">
+                            Barcha tillarda (avtomatik qidiruv)
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; font-size: 14px; cursor: pointer;">
+                            <input type="radio" name="lang-filter" value="uz" style="width: 16px; height: 16px;">
+                            🇺🇿 Faqat o'zbek tilida
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; font-size: 14px; cursor: pointer;">
+                            <input type="radio" name="lang-filter" value="ru" style="width: 16px; height: 16px;">
+                            🇷🇺 Faqat rus tilida
+                        </label>
+                        <label style="display:flex; align-items:center; gap:8px; font-size: 14px; cursor: pointer;">
+                            <input type="radio" name="lang-filter" value="en" style="width: 16px; height: 16px;">
+                            🇬🇧 Faqat ingliz tilida
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Mualliflar -->
+                <div class="f-group">
+                    <div class="f-label-row">
+                        <span class="f-label">👤 Mualliflar</span>
+                        <span class="f-reset" onclick="document.getElementById('authors-input').value='';">↺</span>
+                    </div>
+                    <div class="f-input-with-hint">
+                        <input type="text" id="authors-input" class="f-input full-w"
+                            placeholder="Muallif(lar)ning ismini kiriting...">
+                        <span class="f-hint">💡 Maslahatlar</span>
+                    </div>
+                </div>
+
+                <!-- Jurnallar -->
+                <div class="f-group">
+                    <div class="f-label-row">
+                        <span class="f-label">📖 Jurnallar</span>
+                        <span class="f-reset" onclick="document.getElementById('journals-input').value='';">↺</span>
+                    </div>
+                    <div class="f-input-with-hint">
+                        <input type="text" id="journals-input" class="f-input full-w"
+                            placeholder="Jurnal yoki nashr nomini kiriting...">
+                        <span class="f-hint">💡 Maslahatlar</span>
+                    </div>
+                </div>
+
+                <!-- H-indeks & SJR -->
+                <div class="f-row-split">
+                    <div class="f-half">
+                        <div class="f-label-row">
+                            <span class="f-label">📊 H-indeks ❔</span>
+                        </div>
+                        <div class="f-inputs-row">
+                            <input type="number" id="h-from" placeholder="0" class="f-input short">
+                            <span>-</span>
+                            <input type="number" id="h-to" placeholder="1500" class="f-input short">
+                        </div>
+                    </div>
+                    <div class="f-half">
+                        <div class="f-label-row">
+                            <span class="f-label">📈 SJR kvartillari ❔</span>
+                        </div>
+                        <div class="f-checkbox-group">
+                            <label><input type="checkbox" id="sjr-1" checked> 1</label>
+                            <label><input type="checkbox" id="sjr-2" checked> 2</label>
+                            <label><input type="checkbox" id="sjr-3" checked> 3</label>
+                            <label><input type="checkbox" id="sjr-4" checked> 4</label>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-bottom-fixed">
+                    <button type="submit" class="apply-btn">Qo'llash</button>
+                    <button type="button" class="back-to-results-btn" id="show-results-btn"
+                        style="display:none;">Natijalarni ko'rish</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Results List Section -->
+        <div id="results-panel" class="results-panel-container" style="display:none;">
+            <div class="results-header">
+                <h2>Natijalar</h2>
+                <button id="show-filters-btn" class="edit-filters-btn">⚙️ Filtrlarni o'zgartirish</button>
+            </div>
+
+            <div id="author-profile-container" style="display:none;">
+                <div class="author-profile-card">
+                    <h3 class="author-name">👤 <span id="ap-name"></span></h3>
+                    <p class="author-aliases" id="ap-aliases"></p>
+                    <p class="author-bio" id="ap-bio"></p>
+                </div>
+            </div>
+
+            <div class="results-container" id="results-list">
+                <!-- Results go here -->
+            </div>
+        </div>
+    </div>
+
+    <div class="workspace">
+        <div id="network-graph"></div>
+        <div class="loader-overlay" id="loader">
+            <div class="loader"></div>
+            <div class="loader-text" id="loader-msg">Tarmoq yuklanmoqda...</div>
+        </div>
+
+        <div class="details-panel" id="details-panel">
+            <h3 class="details-title" id="d-title">Paper Title</h3>
+            <div class="paper-meta" style="margin-bottom: 8px;">
+                <span id="d-year">2023</span>
+                <span><span id="d-cites" style="color:var(--accent); font-weight:bold;">0</span> citations</span>
+            </div>
+            <p id="d-authors" class="paper-authors" style="white-space: normal; color: #cbd5e1;"></p>
+            <div style="margin-top: 16px;">
+                <a href="#" target="_blank" class="download-btn" id="d-download-btn" style="display:none;">
+                    📥 Yuklab olish (PDF)
+                </a>
+                <span id="d-no-download" style="display:none; color:#ef4444; font-size:13px; padding: 8px 0;">🔒 PDF
+                    yopiq (Faqat pullik manba)</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Auth Modal (Email OTP) -->
+    <div id="auth-modal" class="modal-overlay">
+        <div class="modal-content">
+            <h2 id="auth-title">Xush kelibsiz!</h2>
+            <p style="color: #94a3b8; font-size: 14px; margin-bottom: 20px; text-align: center;">
+                Tizimga kirish uchun ishlashdagi email manzilingizni kiriting. Biz sizga 6 xonali xavfsizlik kodini
+                jo'natamiz.
+            </p>
+
+            <!-- Step 1: Send OTP -->
+            <form id="otp-request-form">
+                <input type="email" id="auth-email" class="f-input" style="width:100%; margin-bottom: 12px;"
+                    placeholder="Email manzili (masalan: ismim@gmail.com)" required>
+                <button type="submit" class="apply-btn" id="auth-send-btn">Kodni jo'natish</button>
+            </form>
+
+            <!-- Step 2: Verify OTP -->
+            <form id="otp-verify-form" style="display:none; margin-top: 16px;">
+                <p style="color: #cbd5e1; font-size: 13px; margin-bottom: 12px; text-align: center;" id="otp-sent-msg">
+                </p>
+                <input type="text" id="auth-otp-code" class="f-input"
+                    style="width:100%; margin-bottom: 12px; text-align: center; letter-spacing: 4px; font-size: 18px;"
+                    placeholder="123456" maxlength="6" required autocomplete="off">
+                <button type="submit" class="apply-btn" id="auth-verify-btn">Tasdiqlash</button>
+            </form>
+
+            <button class="close-modal" onclick="closeAuthModal()">×</button>
+        </div>
+    </div>
+
+    <!-- Admin Modal -->
+    <div id="admin-modal" class="modal-overlay">
+        <div class="modal-content" style="width: 500px; max-height: 80vh; overflow-y: auto;">
+            <h2>Admin Panel: Foydalanuvchilar</h2>
+            <div id="admin-users-list"></div>
+            <button class="close-modal" onclick="closeAdminModal()">×</button>
+        </div>
+    </div>
+
+    <script>
+        window.onerror = function (message, source, lineno, colno, error) {
+            console.error("JS Xatosi: " + message + " at " + lineno + ":" + colno);
+            return true;
+        };
+        const API_BASE = '/api';
+        let network = null;
+        let nodesDataset = new vis.DataSet([]);
+        let edgesDataset = new vis.DataSet([]);
+
+        // Initialize Vanta.js WebGL Interactive Background
+        VANTA.NET({
+            el: "#vanta-bg",
+            mouseControls: true,
+            touchControls: true,
+            gyroControls: false,
+            minHeight: 200.00,
+            minWidth: 200.00,
+            scale: 1.00,
+            scaleMobile: 1.00,
+            color: 0x3b82f6, // Accent blue 
+            backgroundColor: 0x0f172a, // Slate-900 matching the root --bg-color
+            points: 12.00,
+            maxDistance: 22.00,
+            spacing: 16.00,
+            showDots: true
+        });
+
+        // DOM Elements
+        const advancedForm = document.getElementById('advanced-search-form');
+        const mainSearchForm = document.getElementById('main-search-form');
+        const filterPanel = document.getElementById('filter-panel');
+        const resultsPanel = document.getElementById('results-panel');
+        const showResultsBtn = document.getElementById('show-results-btn');
+        const showFiltersBtn = document.getElementById('show-filters-btn');
+        const toggleFilterBtn = document.getElementById('toggle-filter-btn');
+        let currentUser = null;
+        let isLoginMode = true;
+
+        const authModal = document.getElementById('auth-modal');
+        const adminModal = document.getElementById('admin-modal');
+        const otpReqForm = document.getElementById('otp-request-form');
+        const otpVerForm = document.getElementById('otp-verify-form');
+        const authEmailInput = document.getElementById('auth-email');
+        const authOtpInput = document.getElementById('auth-otp-code');
+        const otpSentMsg = document.getElementById('otp-sent-msg');
+        const authSendBtn = document.getElementById('auth-send-btn');
+        const authVerifyBtn = document.getElementById('auth-verify-btn');
+        const loginBtnHeader = document.getElementById('login-btn-header');
+        const adminBtn = document.getElementById('admin-btn');
+
+        function openAuthModal() {
+            if (currentUser != null) {
+                // Logout
+                currentUser = null;
+                loginBtnHeader.textContent = "Kirish / Ro'yxatdan o'tish";
+                adminBtn.style.display = 'none';
+                return;
+            }
+            otpReqForm.style.display = 'block';
+            otpVerForm.style.display = 'none';
+            authEmailInput.value = '';
+            authOtpInput.value = '';
+            authModal.style.display = 'flex';
+        }
+        function closeAuthModal() { authModal.style.display = 'none'; }
+
+        // OTP Request (Send Code)
+        otpReqForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const email = authEmailInput.value.trim();
+            if (!email) return;
+
+            authSendBtn.textContent = 'Jo\'natilmoqda...';
+            authSendBtn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/send-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    otpReqForm.style.display = 'none';
+                    otpVerForm.style.display = 'block';
+                    if (data.dev_otp) {
+                        otpSentMsg.innerHTML = `<span style="color:#fbbf24;">(Test rejim)</span> OTP kod tezkor kiritildi! Tasdiqlashni bosing.`;
+                        authOtpInput.value = data.dev_otp;
+                    } else {
+                        otpSentMsg.innerHTML = `Biz <strong>${email}</strong> manziliga 6 xonali kod yubordik!`;
+                    }
+                    authOtpInput.focus();
+                } else {
+                    alert(data.error || "Xatolik yuz berdi");
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Tarmoq xatosi");
+            } finally {
+                authSendBtn.textContent = 'Kodni jo\'natish';
+                authSendBtn.disabled = false;
+            }
+        };
+
+        // OTP Verify (Login)
+        otpVerForm.onsubmit = async (e) => {
+            e.preventDefault();
+            const email = authEmailInput.value.trim();
+            const otp = authOtpInput.value.trim();
+
+            authVerifyBtn.textContent = 'Tekshirilmoqda...';
+            authVerifyBtn.disabled = true;
+
+            try {
+                const res = await fetch(`${API_BASE}/auth/verify-otp`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email, otp: otp })
+                });
+                const data = await res.json();
+
+                if (res.ok) {
+                    currentUser = data;
+                    loginBtnHeader.textContent = "Chiqish (" + data.username + ")";
+                    if (data.role === 'admin') adminBtn.style.display = 'block';
+                    closeAuthModal();
+                } else {
+                    alert(data.error || "Xato kod!");
+                    authOtpInput.value = '';
+                    authOtpInput.focus();
+                }
+            } catch (e) {
+                console.error(e);
+                alert("Tarmoq xatosi");
+            } finally {
+                authVerifyBtn.textContent = 'Tasdiqlash';
+                authVerifyBtn.disabled = false;
+            }
+        };
+
+        async function openAdminPanel() {
+            adminModal.style.display = 'flex';
+            const res = await fetch(`${API_BASE}/admin/users`);
+            const data = await res.json();
+            const list = document.getElementById('admin-users-list');
+            list.innerHTML = '';
+            data.users.forEach(u => {
+                list.innerHTML += `<div class="admin-user-row">
+                    <span>${u.username} (${u.role})</span>
+                    ${u.role !== 'admin' ? `<button class="delete-user-btn" onclick="deleteUser(${u.id})">O'chirish</button>` : ''}
+                </div>`;
+            });
+        }
+        function closeAdminModal() { adminModal.style.display = 'none'; }
+
+        window.deleteUser = async function (id) {
+            await fetch(`${API_BASE}/admin/users/${id}`, { method: 'DELETE' });
+            openAdminPanel(); // refresh
+        };
+
+        const resultsList = document.getElementById('results-list');
+        const loader = document.getElementById('loader');
+        const loaderMsg = document.getElementById('loader-msg');
+        const detailsPanel = document.getElementById('details-panel');
+
+        // Toggles
+        showFiltersBtn.onclick = () => {
+            filterPanel.style.display = 'flex';
+            resultsPanel.style.display = 'none';
+        };
+
+        toggleFilterBtn.onclick = () => {
+            if (filterPanel.style.display === 'none') {
+                filterPanel.style.display = 'flex';
+                resultsPanel.style.display = 'none';
+            } else {
+                filterPanel.style.display = 'none';
+                resultsPanel.style.display = 'flex';
+            }
+        };
+
+        const showResults = () => {
+            filterPanel.style.display = 'none';
+            resultsPanel.style.display = 'flex';
+        };
+
+        showResultsBtn.onclick = showResults;
+
+        // Init Graph
+        function initGraph() {
+            const container = document.getElementById('network-graph');
+            const data = {
+                nodes: nodesDataset,
+                edges: edgesDataset
+            };
+
+            const options = {
+                nodes: {
+                    shape: 'dot',
+                    font: {
+                        color: '#475569',
+                        size: 14,
+                        face: 'Inter',
+                        vadjust: -12
+                    },
+                    borderWidth: 2,
+                    shadow: false
+                },
+                edges: {
+                    width: 1.5,
+                    color: {
+                        color: '#e2e8f0',
+                        highlight: '#cbd5e1',
+                        hover: '#cbd5e1'
+                    },
+                    smooth: {
+                        type: 'cubicBezier',
+                        forceDirection: 'none',
+                        roundness: 0.6
+                    }
+                },
+                groups: {
+                    main: {
+                        color: { background: '#4b5563', border: '#4b5563' },
+                        font: { size: 16, bold: true },
+                        size: 28
+                    },
+                    reference: {
+                        color: { background: '#ffffff', border: '#3b82f6' },
+                        size: 16
+                    }
+                },
+                physics: {
+                    barnesHut: {
+                        gravitationalConstant: -2000,
+                        centralGravity: 0.1,
+                        springLength: 200,
+                        springConstant: 0.04,
+                        damping: 0.09
+                    },
+                    stabilization: { iterations: 150 }
+                },
+                interaction: {
+                    hover: true,
+                    tooltipDelay: 200
+                }
+            };
+
+            network = new vis.Network(container, data, options);
+
+            // Handle node click
+            network.on("click", function (params) {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    const node = nodesDataset.get(nodeId);
+
+                    // Show details
+                    document.getElementById('d-title').textContent = node.title || node.label;
+                    document.getElementById('d-cites').textContent = (node.value - 1) || 0;
+                    detailsPanel.style.display = 'block';
+                } else {
+                    detailsPanel.style.display = 'none';
+                }
+            });
+
+            // Handle double click to expand network
+            network.on("doubleClick", function (params) {
+                if (params.nodes.length > 0) {
+                    const nodeId = params.nodes[0];
+                    loadPaperNetwork(nodeId);
+                }
+            });
+        }
+
+        // Show/Hide loader
+        const toggleLoader = (show, msg = "Yuklanmoqda...") => {
+            loaderMsg.textContent = msg;
+            loader.style.display = show ? 'flex' : 'none';
+        };
+
+        // Render search results
+        const renderResults = (data) => {
+            const results = data.results || [];
+            resultsList.innerHTML = '';
+
+            // Handle Author Profile
+            const authorContainer = document.getElementById('author-profile-container');
+            if (data.author_profile) {
+                document.getElementById('ap-name').textContent = data.author_profile.name;
+
+                const aliasesStr = data.author_profile.aliases.length > 0 ? "Boshqa ismlari (Taxalluslari): " + data.author_profile.aliases.join(', ') : '';
+                document.getElementById('ap-aliases').textContent = aliasesStr;
+                document.getElementById('ap-bio').textContent = data.author_profile.bio;
+                authorContainer.style.display = 'block';
+            } else {
+                authorContainer.style.display = 'none';
+            }
+
+            if (results.length === 0) {
+                resultsList.innerHTML = '<div style="text-align:center;color:#64748b;margin-top:20px;">Maqola topilmadi</div>';
+                return;
+            }
+
+            results.forEach(paper => {
+                const el = document.createElement('div');
+                el.className = 'result-item';
+
+                // Format authors
+                const authorsStr = paper.authors && paper.authors.length > 0
+                    ? paper.authors.join(', ')
+                    : 'Muallif noma\'lum';
+
+                el.innerHTML = `
+                    <div class="paper-title">${paper.title}</div>
+                    <div class="paper-meta">
+                        <span>${paper.publication_year || 'Yil noma\'lum'}</span>
+                        <span>
+                            ${paper.source === 'CyberLeninka' ? '<span style="color:#10b981; margin-right:8px;">[CyberLeninka]</span>' : ''}
+                            <b style="color:var(--accent)">${paper.cited_by_count}</b> iqtiboslar
+                        </span>
+                    </div>
+                    <div class="paper-authors">${authorsStr}</div>
+                `;
+
+                el.onclick = () => {
+                    // Update details panel
+                    document.getElementById('d-title').textContent = paper.title;
+                    document.getElementById('d-year').textContent = paper.publication_year || 'Yil noma\'lum';
+                    document.getElementById('d-cites').textContent = paper.cited_by_count;
+                    document.getElementById('d-authors').textContent = authorsStr;
+
+                    const downloadBtn = document.getElementById('d-download-btn');
+                    const noDownload = document.getElementById('d-no-download');
+                    if (paper.download_url) {
+                        downloadBtn.href = paper.download_url;
+                        downloadBtn.style.display = 'inline-flex';
+                        noDownload.style.display = 'none';
+                    } else {
+                        downloadBtn.style.display = 'none';
+                        noDownload.style.display = 'inline-block';
+                    }
+
+                    detailsPanel.style.display = 'block';
+
+                    detailsPanel.style.display = 'block';
+
+                    if (paper.source !== 'CyberLeninka') {
+                        loadPaperNetwork(paper.id);
+                    } else {
+                        // Clear existing graph since CyberLeninka doesn't have network data right now
+                        nodesDataset.clear();
+                        edgesDataset.clear();
+                        network.fit();
+                    }
+                };
+
+                resultsList.appendChild(el);
+            });
+        };
+
+        // Perform search
+        const performSearch = async (e) => {
+            e.preventDefault();
+
+            const mainInput = document.getElementById('main-search-input');
+            const advInput = document.getElementById('search-input');
+            const mainQuery = mainInput ? mainInput.value.trim() : "";
+            const advQuery = advInput ? advInput.value.trim() : "";
+            const query = mainQuery || advQuery;
+
+            const yearFrom = document.getElementById('year-from').value;
+            const yearTo = document.getElementById('year-to').value;
+            const authors = document.getElementById('authors-input').value.trim();
+            const journals = document.getElementById('journals-input').value.trim();
+            const langValue = document.querySelector('input[name="lang-filter"]:checked').value;
+            const hFrom = document.getElementById('h-from').value;
+            const hTo = document.getElementById('h-to').value;
+
+            const sjr = [];
+            if (document.getElementById('sjr-1').checked) sjr.push(1);
+            if (document.getElementById('sjr-2').checked) sjr.push(2);
+            if (document.getElementById('sjr-3').checked) sjr.push(3);
+            if (document.getElementById('sjr-4').checked) sjr.push(4);
+
+            if (!query && !yearFrom && !yearTo && !authors && !journals && !uzLang) {
+                alert("Iltimos kamida bitta qidiruv mezonini kiriting.");
+                return;
+            }
+
+            // Move view to results
+            showResults();
+            toggleLoader(true, "Maqolalar qidirilmoqda...");
+
+            const params = new URLSearchParams();
+            if (query) params.append('q', query);
+            if (yearFrom) params.append('year_start', yearFrom);
+            if (yearTo) params.append('year_end', yearTo);
+            if (authors) params.append('authors', authors);
+            if (journals) params.append('journals', journals);
+            if (langValue) params.append('lang', langValue);
+            if (hFrom) params.append('min_cites', hFrom);
+            if (hTo) params.append('max_cites', hTo);
+            sjr.forEach(v => params.append('sjr[]', v));
+
+            try {
+                const res = await fetch(`${API_BASE}/search?${params.toString()}`);
+                const data = await res.json();
+
+                if (res.ok) {
+                    renderResults(data);
+                    showResultsBtn.style.display = 'block'; // Make back button visible for future uses
+
+                    // Auto-load the graph network for the very first result to instantly show a Litmaps-like visualization
+                    if (data.results && data.results.length > 0) {
+                        const firstPaper = data.results[0];
+                        const authorsStr = firstPaper.authors && firstPaper.authors.length > 0
+                            ? firstPaper.authors.join(', ')
+                            : 'Muallif noma\'lum';
+
+                        document.getElementById('d-title').textContent = firstPaper.title;
+                        document.getElementById('d-year').textContent = firstPaper.publication_year || 'Yil noma\'lum';
+                        document.getElementById('d-cites').textContent = firstPaper.cited_by_count;
+                        document.getElementById('d-authors').textContent = authorsStr;
+                        detailsPanel.style.display = 'block';
+
+                        if (firstPaper.source !== 'CyberLeninka') {
+                            loadPaperNetwork(firstPaper.id);
+                        } else {
+                            nodesDataset.clear();
+                            edgesDataset.clear();
+                        }
+                    }
+                } else {
+                    alert('Xatolik yuz berdi: ' + (data.error || 'Noma\'lum xato'));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Tarmoq xatosi yuz berdi');
+            } finally {
+                toggleLoader(false);
+            }
+        };
+
+        mainSearchForm.addEventListener('submit', performSearch);
+        advancedForm.addEventListener('submit', performSearch);
+
+        // --- Autocomplete Logic ---
+        const mainInput = document.getElementById('main-search-input');
+        const suggestionsBox = document.getElementById('search-suggestions');
+        let suggestTimeout = null;
+
+        mainInput.addEventListener('input', (e) => {
+            const val = e.target.value.trim();
+            if (!val) {
+                suggestionsBox.style.display = 'none';
+                return;
+            }
+
+            clearTimeout(suggestTimeout);
+            suggestTimeout = setTimeout(async () => {
+                try {
+                    const res = await fetch(`${API_BASE}/suggest?q=${encodeURIComponent(val)}`);
+                    const data = await res.json();
+
+                    if (data.results && data.results.length > 0) {
+                        suggestionsBox.innerHTML = '';
+                        // OpenAlex returns an array of hint objects with "display_name"
+                        data.results.forEach(item => {
+                            const div = document.createElement('div');
+                            div.className = 'suggestion-item';
+                            div.innerHTML = `<span class="suggestion-match">${item.display_name}</span>`;
+                            if (item.hint) {
+                                div.innerHTML += ` <span style="color:#64748b; font-size:11px;">— ${item.hint}</span>`;
+                            }
+                            div.onclick = () => {
+                                mainInput.value = item.display_name;
+                                suggestionsBox.style.display = 'none';
+                                // Auto submit immediately after selecting a suggestion
+                                performSearch(new Event('submit'));
+                            };
+                            suggestionsBox.appendChild(div);
+                        });
+                        suggestionsBox.style.display = 'block';
+                    } else {
+                        suggestionsBox.style.display = 'none';
+                    }
+                } catch (e) {
+                    console.error("Autocomplete xatosi", e);
+                }
+            }, 300); // 300ms debounce buffer
+        });
+
+        // Hide suggestions when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!mainInput.contains(e.target) && suggestionsBox && !suggestionsBox.contains(e.target)) {
+                suggestionsBox.style.display = 'none';
+            }
+        });
+
+        // Load specific paper's visual network
+        async function loadPaperNetwork(paperId) {
+            toggleLoader(true, "Iqtiboslar tarmog'i tuzilmoqda...");
+
+            try {
+                // Encode the full URI if it's an OpenAlex URL
+                const encodedId = encodeURIComponent(paperId);
+                const res = await fetch(`${API_BASE}/paper/${encodedId}/network`);
+                const data = await res.json();
+
+                if (res.ok) {
+                    // Clear existing graph
+                    nodesDataset.clear();
+                    edgesDataset.clear();
+
+                    // Add new data
+                    nodesDataset.add(data.nodes);
+                    edgesDataset.add(data.edges);
+
+                    // Zoom to fit
+                    network.fit({
+                        animation: { duration: 1000, easingFunction: "easeInOutQuad" }
+                    });
+                } else {
+                    alert('Tarmoqni yuklashda xatolik: ' + (data.error || ''));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Tizim bilan ulanishda xato');
+            } finally {
+                toggleLoader(false);
+            }
+        }
+
+        // Initialize on load
+        window.onload = initGraph;
+    </script>
+</body>
+
+</html>
