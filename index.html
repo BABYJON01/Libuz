@@ -776,6 +776,19 @@
                     </div>
                 </div>
 
+                <!-- Turi -->
+                <div class="f-group">
+                    <div class="f-label-row">
+                        <span class="f-label">📚 Hujjat turi</span>
+                    </div>
+                    <select id="work-type-filter" class="f-input full-w" style="margin-top: 8px; cursor: pointer;">
+                        <option value="">Barchasi</option>
+                        <option value="journal-article">📄 Maqola (Article)</option>
+                        <option value="book">📖 Kitob (Book, she'rlar, doston)</option>
+                        <option value="dataset">📊 Ma'lumotlar to'plami (Dataset)</option>
+                    </select>
+                </div>
+
                 <!-- Tillar -->
                 <div class="f-group" style="padding-bottom: 8px; border-bottom: none;">
                     <div class="f-label-row">
@@ -896,7 +909,14 @@
             </div>
             <p id="d-authors" class="paper-authors" style="white-space: normal; color: #cbd5e1;"></p>
             <div style="margin-top: 16px;">
-                <a href="#" target="_blank" class="download-btn" id="d-download-btn" style="display:none;">
+                <button id="d-explore-btn"
+                    style="width: 100%; padding: 12px 16px; border-radius: 8px; background: #3b82f6; border: none; color: white; display: none; flex-direction: column; align-items: flex-start; margin-bottom: 12px; cursor: pointer; transition: background 0.2s, transform 0.1s;">
+                    <span style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">Explore Related Articles
+                        ⮞</span>
+                    <span style="font-size: 12px; opacity: 0.9;">On a new Litmap</span>
+                </button>
+                <a href="#" target="_blank" class="download-btn" id="d-download-btn"
+                    style="display:none; width: 100%; text-align: center; justify-content: center;">
                     📥 Yuklab olish (PDF)
                 </a>
                 <span id="d-no-download" style="display:none; color:#ef4444; font-size:13px; padding: 8px 0;">🔒 PDF
@@ -1144,45 +1164,54 @@
 
             const options = {
                 nodes: {
-                    shape: 'dot',
+                    shape: 'circle',
                     font: {
-                        color: '#475569',
-                        size: 14,
-                        face: 'Inter',
-                        vadjust: -12
+                        color: '#0f172a',
+                        size: 12,
+                        face: 'Inter'
                     },
-                    borderWidth: 2,
-                    shadow: false
+                    borderWidth: 1,
+                    shadow: true,
+                    margin: 10,
+                    widthConstraint: { maximum: 120 }
                 },
                 edges: {
-                    width: 1.5,
+                    width: 1,
                     color: {
-                        color: '#e2e8f0',
-                        highlight: '#cbd5e1',
-                        hover: '#cbd5e1'
+                        color: '#94a3b8',
+                        highlight: '#3b82f6',
+                        hover: '#3b82f6'
                     },
                     smooth: {
-                        type: 'cubicBezier',
-                        forceDirection: 'none',
-                        roundness: 0.6
+                        type: 'continuous'
+                    },
+                    arrows: {
+                        to: { enabled: true, scaleFactor: 0.5 }
                     }
                 },
                 groups: {
                     main: {
-                        color: { background: '#4b5563', border: '#4b5563' },
-                        font: { size: 16, bold: true },
-                        size: 28
+                        color: { background: '#ffffff', border: '#333333' },
+                        font: { size: 14, bold: true, color: '#000000' },
+                        shape: 'circle',
+                        widthConstraint: { maximum: 160 },
+                        margin: 15
                     },
                     reference: {
-                        color: { background: '#ffffff', border: '#3b82f6' },
-                        size: 16
+                        color: { background: '#e0f2fe', border: '#7dd3fc' },
+                    },
+                    author: {
+                        color: { background: '#fef3c7', border: '#fcd34d' },
+                    },
+                    cited_by: {
+                        color: { background: '#dcfce7', border: '#86efac' },
                     }
                 },
                 physics: {
                     barnesHut: {
-                        gravitationalConstant: -2000,
-                        centralGravity: 0.1,
-                        springLength: 200,
+                        gravitationalConstant: -3500,
+                        centralGravity: 0.3,
+                        springLength: 150,
                         springConstant: 0.04,
                         damping: 0.09
                     },
@@ -1279,6 +1308,8 @@
 
                     const downloadBtn = document.getElementById('d-download-btn');
                     const noDownload = document.getElementById('d-no-download');
+                    const exploreBtn = document.getElementById('d-explore-btn');
+
                     if (paper.download_url) {
                         downloadBtn.href = paper.download_url;
                         downloadBtn.style.display = 'inline-flex';
@@ -1288,18 +1319,16 @@
                         noDownload.style.display = 'inline-block';
                     }
 
-                    detailsPanel.style.display = 'block';
-
-                    detailsPanel.style.display = 'block';
-
                     if (paper.source !== 'CyberLeninka') {
-                        loadPaperNetwork(paper.id);
+                        exploreBtn.style.display = 'flex';
+                        exploreBtn.onclick = () => {
+                            loadPaperNetwork(paper.id);
+                        };
                     } else {
-                        // Clear existing graph since CyberLeninka doesn't have network data right now
-                        nodesDataset.clear();
-                        edgesDataset.clear();
-                        network.fit();
+                        exploreBtn.style.display = 'none';
                     }
+
+                    detailsPanel.style.display = 'block';
                 };
 
                 resultsList.appendChild(el);
@@ -1323,6 +1352,7 @@
             const langValue = document.querySelector('input[name="lang-filter"]:checked').value;
             const hFrom = document.getElementById('h-from').value;
             const hTo = document.getElementById('h-to').value;
+            const workType = document.getElementById('work-type-filter') ? document.getElementById('work-type-filter').value : '';
 
             const sjr = [];
             if (document.getElementById('sjr-1').checked) sjr.push(1);
@@ -1348,6 +1378,7 @@
             if (langValue) params.append('lang', langValue);
             if (hFrom) params.append('min_cites', hFrom);
             if (hTo) params.append('max_cites', hTo);
+            if (workType) params.append('work_type', workType);
             sjr.forEach(v => params.append('sjr[]', v));
 
             try {
@@ -1371,9 +1402,16 @@
                         document.getElementById('d-authors').textContent = authorsStr;
                         detailsPanel.style.display = 'block';
 
+                        const exploreBtn = document.getElementById('d-explore-btn');
+
                         if (firstPaper.source !== 'CyberLeninka') {
+                            exploreBtn.style.display = 'flex';
+                            exploreBtn.onclick = () => {
+                                loadPaperNetwork(firstPaper.id);
+                            };
                             loadPaperNetwork(firstPaper.id);
                         } else {
+                            exploreBtn.style.display = 'none';
                             nodesDataset.clear();
                             edgesDataset.clear();
                         }
