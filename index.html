@@ -1164,26 +1164,27 @@
 
             const options = {
                 nodes: {
-                    shape: 'circle',
+                    shape: 'dot',
                     font: {
-                        color: '#0f172a',
-                        size: 12,
-                        face: 'Inter'
+                        color: '#475569',
+                        size: 13,
+                        face: 'Inter',
+                        vadjust: 8
                     },
-                    borderWidth: 1,
-                    shadow: true,
-                    margin: 10,
-                    widthConstraint: { maximum: 120 }
+                    borderWidth: 3,
+                    shadow: false
                 },
                 edges: {
-                    width: 1,
+                    width: 1.5,
                     color: {
-                        color: '#94a3b8',
+                        color: '#cbd5e1',
                         highlight: '#3b82f6',
                         hover: '#3b82f6'
                     },
                     smooth: {
-                        type: 'continuous'
+                        type: 'cubicBezier',
+                        forceDirection: 'none',
+                        roundness: 0.6
                     },
                     arrows: {
                         to: { enabled: true, scaleFactor: 0.5 }
@@ -1191,20 +1192,22 @@
                 },
                 groups: {
                     main: {
-                        color: { background: '#ffffff', border: '#333333' },
-                        font: { size: 14, bold: true, color: '#000000' },
-                        shape: 'circle',
-                        widthConstraint: { maximum: 160 },
-                        margin: 15
+                        color: { background: '#ffffff', border: '#1e3a8a', highlight: { background: '#ffffff', border: '#1e3a8a' } },
+                        font: { size: 15, bold: true, color: '#1e293b' },
+                        size: 28,
+                        borderWidth: 4
                     },
                     reference: {
-                        color: { background: '#e0f2fe', border: '#7dd3fc' },
+                        color: { background: '#ffffff', border: '#94a3b8', highlight: { background: '#ffffff', border: '#3b82f6' } },
+                        size: 18
                     },
                     author: {
-                        color: { background: '#fef3c7', border: '#fcd34d' },
+                        color: { background: '#e0f2fe', border: '#0284c7', highlight: { background: '#e0f2fe', border: '#0ea5e9' } },
+                        size: 20
                     },
                     cited_by: {
-                        color: { background: '#dcfce7', border: '#86efac' },
+                        color: { background: '#ffffff', border: '#10b981', highlight: { background: '#ffffff', border: '#059669' } },
+                        size: 18
                     }
                 },
                 physics: {
@@ -1226,7 +1229,7 @@
             network = new vis.Network(container, data, options);
 
             // Handle node click
-            network.on("click", function (params) {
+            network.on("selectNode", function (params) {
                 if (params.nodes.length > 0) {
                     const nodeId = params.nodes[0];
                     const node = nodesDataset.get(nodeId);
@@ -1235,7 +1238,29 @@
                     document.getElementById('d-title').textContent = node.title || node.label;
                     document.getElementById('d-cites').textContent = (node.value - 1) || 0;
                     detailsPanel.style.display = 'block';
-                } else {
+
+                    // Expand label on click
+                    if (!node.originalLabel) {
+                        node.originalLabel = node.label;
+                    }
+                    if (node.title) {
+                        const expandedLabel = node.originalLabel + " – " + node.title;
+                        nodesDataset.update({ id: nodeId, label: expandedLabel });
+                    }
+                }
+            });
+
+            // Handle deselection (revert label)
+            network.on("deselectNode", function (params) {
+                if (params.previousSelection && params.previousSelection.nodes) {
+                    params.previousSelection.nodes.forEach(id => {
+                        const node = nodesDataset.get(id);
+                        if (node && node.originalLabel) {
+                            nodesDataset.update({ id: id, label: node.originalLabel });
+                        }
+                    });
+                }
+                if (params.nodes.length === 0) {
                     detailsPanel.style.display = 'none';
                 }
             });
