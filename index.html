@@ -885,6 +885,12 @@
                     <h3 class="author-name">👤 <span id="ap-name"></span></h3>
                     <p class="author-aliases" id="ap-aliases"></p>
                     <p class="author-bio" id="ap-bio"></p>
+                    <button id="ap-explore-btn"
+                        style="width: 100%; padding: 12px 16px; border-radius: 8px; background: #10b981; border: none; color: white; display: flex; flex-direction: column; align-items: flex-start; margin-top: 16px; cursor: pointer; transition: background 0.2s, transform 0.1s;">
+                        <span style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">Muallif semantik grafigini
+                            ko'rish ⮞</span>
+                        <span style="font-size: 12px; opacity: 0.9;">Author Knowledge Graph (Litmap)</span>
+                    </button>
                 </div>
             </div>
 
@@ -1293,6 +1299,12 @@
                 const aliasesStr = data.author_profile.aliases.length > 0 ? "Boshqa ismlari (Taxalluslari): " + data.author_profile.aliases.join(', ') : '';
                 document.getElementById('ap-aliases').textContent = aliasesStr;
                 document.getElementById('ap-bio').textContent = data.author_profile.bio;
+
+                const apExploreBtn = document.getElementById('ap-explore-btn');
+                apExploreBtn.onclick = () => {
+                    loadAuthorNetwork(data.author_profile.name);
+                };
+
                 authorContainer.style.display = 'block';
             } else {
                 authorContainer.style.display = 'none';
@@ -1533,6 +1545,36 @@
                     });
                 } else {
                     alert('Tarmoqni yuklashda xatolik: ' + (data.error || ''));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Tizim bilan ulanishda xato');
+            } finally {
+                toggleLoader(false);
+            }
+        }
+
+        // Load semantic author knowledge graph
+        async function loadAuthorNetwork(authorName) {
+            toggleLoader(true, "Muallif semantik tarmog'i tuzilmoqda...");
+
+            try {
+                const encodedName = encodeURIComponent(authorName);
+                const res = await fetch(`${API_BASE}/author/${encodedName}/network`);
+                const data = await res.json();
+
+                if (res.ok) {
+                    nodesDataset.clear();
+                    edgesDataset.clear();
+
+                    nodesDataset.add(data.nodes);
+                    edgesDataset.add(data.edges);
+
+                    network.fit({
+                        animation: { duration: 1000, easingFunction: "easeInOutQuad" }
+                    });
+                } else {
+                    alert("Muallif tarmog'ini yuklashda xatolik: " + (data.error || ''));
                 }
             } catch (err) {
                 console.error(err);
