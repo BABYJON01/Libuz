@@ -340,6 +340,39 @@ def get_cyberleninka_results(query, max_results=5):
         print(f"CyberLeninka error: {e}")
         return []
 
+def get_google_books_results(query, max_results=10):
+    """Fetch books matching the query from Google Books API."""
+    url = f"https://www.googleapis.com/books/v1/volumes?q={query}&maxResults={max_results}"
+    try:
+        response = requests.get(url, timeout=5)
+        if response.status_code == 200:
+            items = response.json().get('items', [])
+            books = []
+            for item in items:
+                vol = item.get('volumeInfo', {})
+                original_title = vol.get('title', 'Noma\'lum Kitob')
+                # Translate book title to Uzbek
+                uz_title = safe_translate(original_title, 'uz')
+                
+                authors = vol.get('authors', ['Noma\'lum'])
+                year = vol.get('publishedDate', 'YYYY')[:4]
+                link = vol.get('infoLink', '#')
+                
+                books.append({
+                    "id": f"gbooks_{item.get('id')}",
+                    "title": uz_title,
+                    "original_title": original_title,
+                    "publication_year": year,
+                    "cited_by_count": 0, # Books API doesn't return citations easily here
+                    "authors": authors,
+                    "download_url": link,
+                    "source": "Google Books"
+                })
+            return books
+    except Exception as e:
+        print(f"Google Books error: {e}")
+    return []
+
 @app.route('/api/suggest', methods=['GET'])
 def suggest_papers():
     query = request.args.get('q', '').strip()
@@ -362,6 +395,7 @@ def search_papers():
     lang = request.args.get('lang', '')
     min_citations = request.args.get('min_cites', '')
     max_citations = request.args.get('max_cites', '')
+    work_type = request.args.get('work_type', '').strip()
     
     # Expand query intelligently
     q_expanded = ""
@@ -434,6 +468,11 @@ def search_papers():
     elif max_citations:
         filters.append(f"cited_by_count:<{max_citations}")
         
+    if work_type:
+        # e.g. article => journal-article, book => book, poetry => book?
+        # we can just pass the raw type to OpenAlex
+        filters.append(f"type:{work_type}")
+        
     filter_string = ",".join(filters)
         
     api_url = f"{OPENALEX_API_URL}/works?per-page=20"
@@ -482,6 +521,11 @@ def search_papers():
              for cr in cyber_results:
                  cr['title'] = safe_translate(cr['original_title'], 'uz')
              results.extend(cyber_results)
+             
+        # Broad Entity Fallback: If academic papers are scarce (e.g., searching for politicians/actors)
+        if len(results) <= 3 and not (authors or journals):
+            books = get_google_books_results(query)
+            results.extend(books)
 
         return jsonify({
             "results": results,
@@ -509,18 +553,59 @@ def get_paper_network(paper_id):
     # Add main node
     nodes.append({
         "id": main_paper.get("id"),
-        "label": get_author_label(main_paper),
+        "label": _truncate_title(main_paper.get("title", "Untitled"), 25),
         "title": main_paper.get("title", "Untitled"),
         "group": "main",
-        "value": main_paper.get("cited_by_count", 0) + 1  # Size based on citations
+        "value": main_paper.get("cited_by_count", 0) + 5  # Give it a larger size
     })
     
+    # Add Author nodes for the main paper
+    for author_obj in main_paper.get("authorships", []):
+        author_info = author_obj.get("author", {})
+        author_id = author_info.get("id")
+        author_name = author_info.get("display_name", "Unknown Author")
+        if author_id:
+            nodes.append({
+                "id": f"author_{author_id.split('/')[-1]}",
+                "label": author_name,
+                "title": f"Muallif: {author_name}",
+                "group": "author",
+                "value": 3
+            })
+            # Link author to main paper
+            edges.append({
+                "from": f"author_{author_id.split('/')[-1]}",
+                "to": main_paper.get("id"),
+                "arrows": "to"
+            })
+    
+    # Fetch works that CITE this paper (kimlar bu kitob/maqola haqida yozgan)
+    cited_by_url = f"{OPENALEX_API_URL}/works?filter=cites:{main_paper.get('id')}&per-page=15"
+    try:
+        cites_res = requests.get(cited_by_url, timeout=5)
+        if cites_res.status_code == 200:
+            cites_data = cites_res.json().get("results", [])
+            for cite in cites_data:
+                nodes.append({
+                    "id": cite.get("id"),
+                    "label": get_author_label(cite),
+                    "title": cite.get("title", "Untitled"),
+                    "group": "cited_by",
+                    "value": cite.get("cited_by_count", 0) + 1
+                })
+                # Edge from citing work -> main paper
+                edges.append({
+                    "from": cite.get("id"),
+                    "to": main_paper.get("id"),
+                    "arrows": "to"
+                })
+    except Exception as e:
+        print(f"Error fetching cited by: {e}")
+
     # Fetch referenced works (papers this paper cites)
-    referenced_works = main_paper.get("referenced_works", [])[:15] # Limit to 15 to keep graph sensible
+    referenced_works = main_paper.get("referenced_works", [])[:10] # Limit to 10
     
     for ref_id in referenced_works:
-        # We need to fetch details for each referenced work to get its title
-        # In a real app we might batch this or use a graph DB, but for demo we do individual requests
         ref_response = requests.get(f"{OPENALEX_API_URL}/works/{ref_id.split('openalex.org/')[-1]}")
         if ref_response.status_code == 200:
             ref_data = ref_response.json()
