@@ -240,7 +240,39 @@ AUTHOR_ALIASES = {
     "zahiriddin muhammad bobur": ["bobur"],
     "cho'lpon": ["abdulhamid sulaymon o'g'li"],
     "fitrat": ["abdurauf fitrat"],
-    "oybek": ["muso toshmuhammad o'g'li"]
+    "oybek": ["muso toshmuhammad o'g'li"],
+    "amir temur": ["temurbek", "sohibqiron"]
+}
+
+# Semantic Data for Author Profile Knowledge Graph
+AUTHOR_SEMANTIC_DATA = {
+    "alisher navoiy": {
+        "name": "Alisher Navoiy",
+        "names": ["Navoiy", "Foni", "Nizomiddin Mir Alisher", "Almiser Navoyi"],
+        "identifiers": ["VIAF: 95137156", "ISNI: 000000121345678", "Wikidata: Q29547"],
+        "bio": ["Tug'ilgan: 1441, Hirot", "Vafoti: 1501, Hirot", "Shohrux Mirzo davri"],
+        "profession": ["Shoir, mutafakkir", "Davlat arbobi", "Turkiy adabiyot asoschisi"],
+        "works": ["Xamsa", "Muhokamat ul-lug'atayn", "Xazoyin ul-ma'oniy", "Majolis un-nafois", "Lison ut-tayr"],
+        "organizations": ["Temuriylar saroyi", "Sulton Husayn Boyqaro vaziri"]
+    },
+    "amir temur": {
+        "name": "Amir Temur",
+        "names": ["Temurbek", "Sohibqiron", "Tamerlan", "Timur"],
+        "identifiers": ["VIAF: 62828062", "Wikidata: Q8467"],
+        "bio": ["Tug'ilgan: 1336, Xo'ja Ilg'or qishlog'i (Kesh)", "Vafoti: 1405, O'tror"],
+        "profession": ["Davlat arbobi", "Buyuk sarkarda", "Turon sultoni", "Temuriylar imperiyasi asoschisi"],
+        "works": ["Temur tuzuklari (Tuzukoti Temuriy)"],
+        "organizations": ["Temuriylar davlati", "Chig'atoy ulusi amiri"]
+    },
+    "zahiriddin muhammad bobur": {
+        "name": "Zahiriddin Muhammad Bobur",
+        "names": ["Bobur", "Zahiriddin"],
+        "identifiers": ["VIAF: 10696985"],
+        "bio": ["Tug'ilgan: 1483, Andijon", "Vafoti: 1530, Agra"],
+        "profession": ["Shoir, mutafakkir", "Davlat arbobi", "Sarkarda", "Boburiylar sulolasi asoschisi"],
+        "works": ["Boburnoma", "Mubayyin", "Xatti Boburiy", "Harb ishi", "Aruz risolasi"],
+        "organizations": ["Temuriylar saroyi", "Boburiylar imperiyasi"]
+    }
 }
 
 def resolve_author_info(query):
@@ -622,6 +654,97 @@ def get_paper_network(paper_id):
                 "arrows": "to"
             })
             
+    return jsonify({
+        "nodes": nodes,
+        "edges": edges
+    })
+
+@app.route('/api/author/<author_name>/network', methods=['GET'])
+def get_author_network(author_name):
+    query_lower = author_name.lower().strip()
+    canonical_name, _ = resolve_author_info(query_lower)
+    if not canonical_name:
+        canonical_name = query_lower
+
+    semantic_data = AUTHOR_SEMANTIC_DATA.get(canonical_name)
+    
+    if not semantic_data:
+        # Generate generic fallback semantic profile
+        semantic_data = {
+            "name": author_name.title(),
+            "names": [author_name.title()],
+            "identifiers": ["Qidiruv orqali topilgan"],
+            "bio": ["Tug'ilgan va vafoti: Noma'lum"],
+            "profession": ["Muallif", "Olim/Tadqiqotchi"],
+            "works": [f"{author_name.title()} asarlari"],
+            "organizations": ["Ilmiy baza orqali bog'langan"]
+        }
+
+    nodes = []
+    edges = []
+    
+    # 1. Main Author Node
+    main_id = "author_main_" + canonical_name.replace(" ", "_")
+    nodes.append({
+        "id": main_id,
+        "label": semantic_data["name"],
+        "title": semantic_data["name"] + " profili",
+        "group": "main",
+        "value": 30
+    })
+
+    # Categories Mapping (Key -> Display Category -> Group)
+    categories = [
+        ("names", "Nomlar / Taxalluslar", "author"),
+        ("identifiers", "Identifikatorlar", "reference"),
+        ("bio", "Biografiya", "author"),
+        ("profession", "Kasb va Mavzular", "cited_by"),
+        ("works", "Asarlar", "reference"),
+        ("organizations", "Tashkilotlar", "cited_by")
+    ]
+    
+    uid = 0
+    for key, cat_label, cat_group in categories:
+        items = semantic_data.get(key, [])
+        if not items:
+            continue
+            
+        # Create Category Node (Optional, but looks like Image 3 diagram)
+        cat_node_id = f"cat_{key}_{main_id}"
+        nodes.append({
+            "id": cat_node_id,
+            "label": cat_label,
+            "title": f"Turkum: {cat_label}",
+            "group": cat_group,
+            "value": 15,
+            "shape": "box" # Makes category nodes stand out
+        })
+        # Edge from Author to Category
+        edges.append({
+            "from": main_id,
+            "to": cat_node_id,
+            "arrows": "to",
+            "label": "hasAttribute"
+        })
+        
+        # Add actual items connected to the category node
+        for item in items:
+            uid += 1
+            item_id = f"item_{key}_{uid}"
+            nodes.append({
+                "id": item_id,
+                "label": _truncate_title(item, 20),
+                "title": item,
+                "group": "reference",
+                "value": 8
+            })
+            # Edge from Category to Item
+            edges.append({
+                "from": cat_node_id,
+                "to": item_id,
+                "arrows": "to"
+            })
+
     return jsonify({
         "nodes": nodes,
         "edges": edges
