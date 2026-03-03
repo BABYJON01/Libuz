@@ -910,16 +910,17 @@
         <div class="details-panel" id="details-panel">
             <h3 class="details-title" id="d-title">Paper Title</h3>
             <div class="paper-meta" style="margin-bottom: 8px;">
-                <span id="d-year">2023</span>
-                <span><span id="d-cites" style="color:var(--accent); font-weight:bold;">0</span> citations</span>
+                <span id="d-year" style="display:none;">2023</span>
+                <span><span id="d-cites" style="color:var(--accent); font-weight:bold;">0</span> munosabat /
+                    iqtibos</span>
             </div>
-            <p id="d-authors" class="paper-authors" style="white-space: normal; color: #cbd5e1;"></p>
+            <p id="d-authors" class="paper-authors" style="white-space: normal; color: #cbd5e1; display:none;"></p>
             <div style="margin-top: 16px;">
                 <button id="d-explore-btn"
                     style="width: 100%; padding: 12px 16px; border-radius: 8px; background: #3b82f6; border: none; color: white; display: none; flex-direction: column; align-items: flex-start; margin-bottom: 12px; cursor: pointer; transition: background 0.2s, transform 0.1s;">
-                    <span style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">Explore Related Articles
+                    <span style="font-weight: 600; font-size: 15px; margin-bottom: 4px;">O'xshash maqolalarni ko'rish
                         ⮞</span>
-                    <span style="font-size: 12px; opacity: 0.9;">On a new Litmap</span>
+                    <span style="font-size: 12px; opacity: 0.9;">Yangi Litmap grafida</span>
                 </button>
                 <a href="#" target="_blank" class="download-btn" id="d-download-btn"
                     style="display:none; width: 100%; text-align: center; justify-content: center;">
@@ -1242,7 +1243,30 @@
 
                     // Show details
                     document.getElementById('d-title').textContent = node.title || node.label;
-                    document.getElementById('d-cites').textContent = (node.value - 1) || 0;
+                    let val = (node.value - 1) || 0;
+                    if (val < 0) val = 0;
+                    document.getElementById('d-cites').textContent = val;
+
+                    const elYear = document.getElementById('d-year');
+                    const elAuthors = document.getElementById('d-authors');
+                    const elExplore = document.getElementById('d-explore-btn');
+
+                    if (node.publication_year && node.authors_list) {
+                        elYear.textContent = node.publication_year;
+                        elYear.style.display = 'inline-block';
+                        elAuthors.textContent = node.authors_list;
+                        elAuthors.style.display = 'block';
+                        elExplore.style.display = 'flex';
+
+                        elExplore.onclick = () => {
+                            loadPaperNetwork(nodeId);
+                        };
+                    } else {
+                        elYear.style.display = 'none';
+                        elAuthors.style.display = 'none';
+                        elExplore.style.display = 'none'; // Don't show explore for non-paper conceptual nodes
+                    }
+
                     detailsPanel.style.display = 'block';
 
                     // Expand label on click
