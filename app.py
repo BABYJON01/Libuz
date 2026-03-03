@@ -11,6 +11,7 @@ import time
 import secrets
 import smtplib
 from email.message import EmailMessage
+import urllib.parse
 
 # Load .env variables manually to avoid extra pip dependencies
 env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), '.env')
@@ -634,6 +635,7 @@ def search_papers():
 
 @app.route('/api/paper/<path:paper_id>/network', methods=['GET'])
 def get_paper_network(paper_id):
+    paper_id = urllib.parse.unquote(paper_id)
     # Extract just the ID part if the full OpenAlex URI is passed
     if "openalex.org/" in paper_id:
          paper_id = paper_id.split("openalex.org/")[-1]
@@ -730,6 +732,7 @@ def get_paper_network(paper_id):
 
 @app.route('/api/author/<author_name>/network', methods=['GET'])
 def get_author_network(author_name):
+    author_name = urllib.parse.unquote(author_name)
     query_lower = author_name.lower().strip()
     canonical_name, _ = resolve_author_info(query_lower)
     if not canonical_name:
