@@ -241,7 +241,8 @@ AUTHOR_ALIASES = {
     "cho'lpon": ["abdulhamid sulaymon o'g'li"],
     "fitrat": ["abdurauf fitrat"],
     "oybek": ["muso toshmuhammad o'g'li"],
-    "amir temur": ["temurbek", "sohibqiron"]
+    "amir temur": ["temurbek", "sohibqiron"],
+    "fazliddin ravshanov": ["fazliddin ravshanovich ravshanov", "ravshanov"]
 }
 
 # Semantic Data for Author Profile Knowledge Graph
@@ -252,7 +253,13 @@ AUTHOR_SEMANTIC_DATA = {
         "identifiers": ["VIAF: 95137156", "ISNI: 000000121345678", "Wikidata: Q29547"],
         "bio": ["Tug'ilgan: 1441, Hirot", "Vafoti: 1501, Hirot", "Shohrux Mirzo davri"],
         "profession": ["Shoir, mutafakkir", "Davlat arbobi", "Turkiy adabiyot asoschisi"],
-        "works": ["Xamsa", "Muhokamat ul-lug'atayn", "Xazoyin ul-ma'oniy", "Majolis un-nafois", "Lison ut-tayr"],
+        "works": [
+            {"name": "Xamsa", "translations": ["Ingliz tili", "Rus tili", "Turk tili"]},
+            "Muhokamat ul-lug'atayn", 
+            {"name": "Xazoyin ul-ma'oniy", "translations": ["Fors tili"]},
+            "Majolis un-nafois", 
+            "Lison ut-tayr"
+        ],
         "organizations": ["Temuriylar saroyi", "Sulton Husayn Boyqaro vaziri"]
     },
     "amir temur": {
@@ -270,8 +277,27 @@ AUTHOR_SEMANTIC_DATA = {
         "identifiers": ["VIAF: 10696985"],
         "bio": ["Tug'ilgan: 1483, Andijon", "Vafoti: 1530, Agra"],
         "profession": ["Shoir, mutafakkir", "Davlat arbobi", "Sarkarda", "Boburiylar sulolasi asoschisi"],
-        "works": ["Boburnoma", "Mubayyin", "Xatti Boburiy", "Harb ishi", "Aruz risolasi"],
+        "works": [
+            {"name": "Boburnoma", "translations": ["Ingliz tili", "Fransuz tili", "Rus tili", "Yapon tili"]},
+            "Mubayyin", 
+            "Xatti Boburiy", 
+            "Harb ishi", 
+            "Aruz risolasi"
+        ],
         "organizations": ["Temuriylar saroyi", "Boburiylar imperiyasi"]
+    },
+    "fazliddin ravshanov": {
+        "name": "Fazliddin Ravshanovich Ravshanov",
+        "names": ["Fazliddin Ravshanov", "Ravshanov", "F.R. Ravshanov"],
+        "identifiers": ["ORCID: 0000-xxxx", "Scopus ID: xxxxx"],
+        "bio": ["Zamonaviy olim", "Tadqiqotchi"],
+        "profession": ["Olim", "O'qituvchi", "Tadqiqot ustasi"],
+        "works": [
+            {"name": "TOLERANCE: HISTORY AND DEVELOPMENT", "editions": ["2018", "The Light of Islam"]},
+            {"name": "ABU NASR FARABI ON THE HARMONY OF SOCIETY...", "editions": ["2020", "PDF Available"]},
+            {"name": "Danger and Security: History and Present", "editions": ["2021", "International Journal"]}
+        ],
+        "organizations": ["O'zbekiston Milliy Universiteti", "Tadqiqot markazlari"]
     }
 }
 
@@ -731,19 +757,60 @@ def get_author_network(author_name):
         for item in items:
             uid += 1
             item_id = f"item_{key}_{uid}"
-            nodes.append({
-                "id": item_id,
-                "label": _truncate_title(item, 20),
-                "title": item,
-                "group": "reference",
-                "value": 8
-            })
-            # Edge from Category to Item
-            edges.append({
-                "from": cat_node_id,
-                "to": item_id,
-                "arrows": "to"
-            })
+            
+            # Check if this item is a dictionary (nested relationship)
+            if isinstance(item, dict):
+                # E.g., item = {"name": "Xamsa", "translations": ["En", "Ru"]}
+                display_name = item.get("name", "Unknown")
+                nodes.append({
+                    "id": item_id,
+                    "label": _truncate_title(display_name, 20),
+                    "title": display_name,
+                    "group": "reference",
+                    "value": 8
+                })
+                # Edge from Category to Item
+                edges.append({
+                    "from": cat_node_id,
+                    "to": item_id,
+                    "arrows": "to"
+                })
+                
+                # Check for sub-items (e.g., translations, editions)
+                for sub_key in ["translations", "editions"]:
+                    if sub_key in item:
+                        sub_items = item[sub_key]
+                        for sub_item in sub_items:
+                            uid += 1
+                            sub_item_id = f"sub_{sub_key}_{uid}"
+                            nodes.append({
+                                "id": sub_item_id,
+                                "label": sub_item,
+                                "title": f"{sub_key.title()}: {sub_item}",
+                                "group": "cited_by", # distinctive color
+                                "value": 5
+                            })
+                            edges.append({
+                                "from": item_id,
+                                "to": sub_item_id,
+                                "arrows": "to",
+                                "label": sub_key
+                            })
+            else:
+                # Standard flat string item
+                nodes.append({
+                    "id": item_id,
+                    "label": _truncate_title(item, 20),
+                    "title": item,
+                    "group": "reference",
+                    "value": 8
+                })
+                # Edge from Category to Item
+                edges.append({
+                    "from": cat_node_id,
+                    "to": item_id,
+                    "arrows": "to"
+                })
 
     return jsonify({
         "nodes": nodes,
