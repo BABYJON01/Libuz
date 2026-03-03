@@ -443,6 +443,44 @@ def suggest_papers():
         return jsonify(response.json())
     return jsonify({"results": []})
 
+def uz_transliterate(text):
+    if not text: return text
+    
+    l2c = {
+        "sh": "ш", "ch": "ч", "ya": "я", "yo": "ё", "yu": "ю", "o'": "ў", "g'": "ғ",
+        "shch": "щ",
+        "a": "а", "b": "б", "d": "д", "e": "е", "f": "ф", "g": "г", "h": "ҳ",
+        "i": "и", "j": "ж", "k": "к", "l": "л", "m": "м", "n": "н", "o": "о",
+        "p": "п", "q": "қ", "r": "р", "s": "с", "t": "т", "u": "у", "v": "в",
+        "x": "х", "y": "й", "z": "з", "c": "ц",
+        "SH": "Ш", "CH": "Ч", "YA": "Я", "YO": "Ё", "YU": "Ю", "O'": "Ў", "G'": "Ғ",
+        "A": "А", "B": "Б", "D": "Д", "E": "Е", "F": "Ф", "G": "Г", "H": "Ҳ",
+        "I": "И", "J": "Ж", "K": "К", "L": "Л", "M": "М", "N": "Н", "O": "О",
+        "P": "П", "Q": "Қ", "R": "Р", "S": "С", "T": "Т", "U": "У", "V": "В",
+        "X": "Х", "Y": "Й", "Z": "З", "C": "Ц", "'": "ъ"
+    }
+    c2l = {v: k for k, v in l2c.items()}
+    # Hardcoded fixes for some edge cases
+    c2l['э'] = 'e'
+    c2l['Э'] = 'E'
+    c2l['ы'] = 'y'
+    c2l['Ы'] = 'Y'
+    
+    is_cyrillic = any('\u0400' <= char <= '\u04FF' for char in text)
+    res = text
+    
+    if is_cyrillic:
+        # Cyrillic to Latin
+        # Single characters are fine to replace mapping iteration
+        for cyr, lat in sorted(c2l.items(), key=lambda x: len(x[0]), reverse=True):
+            res = res.replace(cyr, lat)
+    else:
+        # Latin to Cyrillic
+        for lat, cyr in sorted(l2c.items(), key=lambda x: len(x[0]), reverse=True):
+            res = res.replace(lat, cyr)
+            
+    return res
+
 @app.route('/api/search', methods=['GET'])
 def search_papers():
     query = request.args.get('q', '').strip()
@@ -486,10 +524,12 @@ def search_papers():
             # Standard translation expansion for openalex
             q_en = safe_translate(query, 'en')
             q_ru = safe_translate(query, 'ru')
+            q_translit = uz_transliterate(query)
             
             terms = [f'"{query}"']
             if q_en and q_en.lower() != query.lower(): terms.append(f'"{q_en}"')
             if q_ru and q_ru.lower() != query.lower(): terms.append(f'"{q_ru}"')
+            if q_translit and q_translit.lower() != query.lower(): terms.append(f'"{q_translit}"')
             
             q_expanded = " OR ".join(terms)
             
@@ -614,7 +654,10 @@ def get_paper_network(paper_id):
         "label": _truncate_title(main_paper.get("title", "Untitled"), 25),
         "title": main_paper.get("title", "Untitled"),
         "group": "main",
-        "value": main_paper.get("cited_by_count", 0) + 5  # Give it a larger size
+        "value": main_paper.get("cited_by_count", 0) + 5,  # Give it a larger size
+        "x": 0,
+        "y": 0,
+        "fixed": {"x": True, "y": True}
     })
     
     # Add Author nodes for the main paper
@@ -716,7 +759,10 @@ def get_author_network(author_name):
         "label": semantic_data["name"],
         "title": semantic_data["name"] + " profili",
         "group": "main",
-        "value": 30
+        "value": 30,
+        "x": 0,
+        "y": 0,
+        "fixed": {"x": True, "y": True}
     })
 
     # Categories Mapping (Key -> Display Category -> Group)
