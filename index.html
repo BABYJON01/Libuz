@@ -1173,10 +1173,12 @@
                 nodes: {
                     shape: 'dot',
                     font: {
-                        color: '#475569',
+                        color: '#f8fafc', // Lighter text color
                         size: 13,
                         face: 'Inter',
-                        vadjust: 8
+                        vadjust: 8,
+                        strokeWidth: 3, // Add dark stroke outline to make it readable over lines
+                        strokeColor: '#0f172a'
                     },
                     borderWidth: 3,
                     shadow: false
@@ -1200,7 +1202,7 @@
                 groups: {
                     main: {
                         color: { background: '#ffffff', border: '#1e3a8a', highlight: { background: '#ffffff', border: '#1e3a8a' } },
-                        font: { size: 15, bold: true, color: '#1e293b' },
+                        font: { size: 15, bold: true, color: '#ffffff', strokeWidth: 4, strokeColor: '#000000' },
                         size: 28,
                         borderWidth: 4
                     },
