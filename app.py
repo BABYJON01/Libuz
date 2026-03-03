@@ -792,7 +792,8 @@ def get_author_network(author_name):
             "title": f"Turkum: {cat_label}",
             "group": cat_group,
             "value": 15,
-            "shape": "box" # Makes category nodes stand out
+            "shape": "box", # Makes category nodes stand out
+            "font": {"strokeWidth": 0} # Prevent heavy outline from ruining internal node text
         })
         # Edge from Author to Category
         edges.append({
