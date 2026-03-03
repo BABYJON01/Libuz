@@ -1275,9 +1275,16 @@
                     if (!node.originalLabel) {
                         node.originalLabel = node.label;
                     }
-                    if (node.title) {
-                        const expandedLabel = node.originalLabel + " – " + node.title;
-                        nodesDataset.update({ id: nodeId, label: expandedLabel });
+                    if (node.title && node.title !== node.originalLabel) {
+                        // Use the title directly instead of appending to originalLabel to avoid redundancy
+                        let expandedLabel = node.title;
+
+                        // Word wrap long titles so they fit nicely inside or under nodes
+                        if (expandedLabel.length > 25) {
+                            expandedLabel = expandedLabel.replace(/(.{1,25})(?:\s+|$)/g, '$1\n');
+                        }
+
+                        nodesDataset.update({ id: nodeId, label: expandedLabel.trim() });
                     }
                 }
             });
