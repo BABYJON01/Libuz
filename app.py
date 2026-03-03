@@ -770,12 +770,12 @@ def get_author_network(author_name):
 
     # Categories Mapping (Key -> Display Category -> Group)
     categories = [
-        ("names", "Nomlar / Taxalluslar", "author"),
-        ("identifiers", "Identifikatorlar", "reference"),
-        ("bio", "Biografiya", "author"),
-        ("profession", "Kasb va Mavzular", "cited_by"),
-        ("works", "Asarlar", "reference"),
-        ("organizations", "Tashkilotlar", "cited_by")
+        ("names", "Nomlar / Taxalluslar", "cat_author"),
+        ("identifiers", "Identifikatorlar", "cat_reference"),
+        ("bio", "Biografiya", "cat_author"),
+        ("profession", "Kasb va Mavzular", "cat_cited_by"),
+        ("works", "Asarlar", "cat_reference"),
+        ("organizations", "Tashkilotlar", "cat_cited_by")
     ]
     
     uid = 0
@@ -791,9 +791,7 @@ def get_author_network(author_name):
             "label": cat_label,
             "title": f"Turkum: {cat_label}",
             "group": cat_group,
-            "value": 15,
-            "shape": "box", # Makes category nodes stand out
-            "font": {"strokeWidth": 0} # Prevent heavy outline from ruining internal node text
+            "value": 15
         })
         # Edge from Author to Category
         edges.append({
