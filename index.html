@@ -1412,7 +1412,15 @@
             network.on("doubleClick", function (params) {
                 if (params.nodes.length > 0) {
                     const nodeId = params.nodes[0];
-                    loadPaperNetwork(nodeId);
+                    const node = nodesDataset.get(nodeId);
+
+                    if (node.group === 'author' || node.group === 'cat_author') {
+                        loadAuthorNetwork(node.label);
+                    } else if (node.group === 'main' || node.group === 'reference' || node.group === 'cited_by') {
+                        loadPaperNetwork(nodeId);
+                    } else {
+                        console.log("Bu tugun uchun qo'shimcha tarmoq mavjud emas.");
+                    }
                 }
             });
         }
