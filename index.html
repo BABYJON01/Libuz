@@ -1417,12 +1417,12 @@
                     if (nodeId.startsWith('https://openalex.org/W') || nodeId.startsWith('cyber_')) {
                         // It's a valid paper ID
                         loadPaperNetwork(nodeId);
-                    } else if (node.group === 'cat_author' || node.group === 'cat_reference' || node.group === 'cat_cited_by') {
-                        console.log("Kategoriya tuguni bosildi.");
+                    } else if (node.id.startsWith('cat_')) {
+                        console.log("Kategoriya yozuvi bosildi. Hech qanday hodisa yo'q.");
                     } else if (node.id.startsWith('author_main_')) {
                         console.log("Asosiy muallif tuguni.");
                     } else {
-                        // For all other text nodes (like professions, organizations, names), perform a search
+                        // For all other text nodes (items branching out, like professions, organizations, bio text), perform a search
                         const mainInput = document.getElementById('main-search-input');
                         if (mainInput) {
                             mainInput.value = node.label;
