@@ -15,11 +15,34 @@
             --bg-color: #0f172a;
             --panel-bg: rgba(30, 41, 59, 0.7);
             --text-color: #f8fafc;
+            --text-muted: #94a3b8;
             --accent: #3b82f6;
             --accent-hover: #2563eb;
             --border: rgba(255, 255, 255, 0.1);
             --node-main: #3b82f6;
             --node-ref: #94a3b8;
+
+            --input-bg: rgba(15, 23, 42, 0.6);
+            --item-bg: rgba(255, 255, 255, 0.03);
+            --item-hover-bg: rgba(255, 255, 255, 0.08);
+            --item-hover-border: rgba(255, 255, 255, 0.2);
+            --modal-bg: rgba(30, 41, 59, 0.95);
+            --overlay: rgba(15, 23, 42, 0.8);
+        }
+
+        body.light-mode {
+            --bg-color: #f8fafc;
+            --panel-bg: rgba(255, 255, 255, 0.85);
+            --text-color: #0f172a;
+            --text-muted: #64748b;
+            --border: rgba(0, 0, 0, 0.1);
+
+            --input-bg: rgba(255, 255, 255, 1);
+            --item-bg: rgba(0, 0, 0, 0.02);
+            --item-hover-bg: rgba(0, 0, 0, 0.05);
+            --item-hover-border: rgba(0, 0, 0, 0.15);
+            --modal-bg: rgba(255, 255, 255, 0.95);
+            --overlay: rgba(255, 255, 255, 0.8);
         }
 
         * {
@@ -75,9 +98,10 @@
             width: 100%;
             padding: 12px 16px;
             border-radius: 8px;
-            background: rgba(15, 23, 42, 0.6);
+            background: var(--input-bg);
             border: 1px solid var(--border);
-            color: white;
+            color: var(--text-color);
+            /* white */
             font-size: 14px;
             outline: none;
             transition: border-color 0.2s;
@@ -94,7 +118,8 @@
             border-radius: 8px;
             background: var(--accent);
             border: none;
-            color: white;
+            color: var(--text-color);
+            /* white */
             font-weight: 500;
             cursor: pointer;
             transition: background 0.2s;
@@ -111,7 +136,7 @@
         }
 
         .result-item {
-            background: rgba(255, 255, 255, 0.03);
+            background: var(--item-bg);
             border: 1px solid var(--border);
             border-radius: 8px;
             padding: 16px;
@@ -121,9 +146,9 @@
         }
 
         .result-item:hover {
-            background: rgba(255, 255, 255, 0.08);
+            background: var(--item-hover-bg);
             transform: translateY(-2px);
-            border-color: rgba(255, 255, 255, 0.2);
+            border-color: var(--item-hover-border);
         }
 
         .paper-title {
@@ -131,19 +156,19 @@
             font-weight: 500;
             margin-bottom: 8px;
             line-height: 1.4;
-            color: #e2e8f0;
+            color: var(--text-color);
         }
 
         .paper-meta {
             font-size: 12px;
-            color: #94a3b8;
+            color: var(--text-muted);
             display: flex;
             justify-content: space-between;
         }
 
         .paper-authors {
             font-size: 12px;
-            color: #64748b;
+            color: var(--text-muted);
             margin-top: 8px;
             white-space: nowrap;
             overflow: hidden;
@@ -173,7 +198,7 @@
             left: 0;
             width: 100%;
             height: 100%;
-            background: rgba(15, 23, 42, 0.8);
+            background: var(--overlay);
             backdrop-filter: blur(4px);
             display: flex;
             flex-direction: column;
@@ -201,7 +226,7 @@
         .loader-text {
             margin-top: 16px;
             font-size: 14px;
-            color: #94a3b8;
+            color: var(--text-muted);
         }
 
         /* Details Panel */
@@ -210,9 +235,9 @@
             bottom: 24px;
             right: 24px;
             width: 260px;
-            background: rgba(15, 23, 42, 0.9);
+            background: var(--modal-bg);
             backdrop-filter: blur(16px);
-            border: 1px solid rgba(255, 255, 255, 0.1);
+            border: 1px solid var(--border);
             border-radius: 12px;
             padding: 16px;
             display: none;
@@ -250,7 +275,7 @@
         }
 
         ::-webkit-scrollbar-thumb {
-            background: rgba(255, 255, 255, 0.1);
+            background: var(--item-hover-bg);
             border-radius: 10px;
         }
 
@@ -291,7 +316,7 @@
             flex-direction: column;
             gap: 8px;
             padding-bottom: 16px;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+            border-bottom: 1px solid var(--border);
         }
 
         .f-label-row {
@@ -300,7 +325,7 @@
             align-items: center;
             font-size: 13px;
             font-weight: 500;
-            color: #cbd5e1;
+            color: var(--text-color);
         }
 
         .f-label {
@@ -311,7 +336,7 @@
 
         .f-reset {
             cursor: pointer;
-            color: #64748b;
+            color: var(--text-muted);
             font-size: 16px;
             padding: 0 4px;
         }
@@ -327,9 +352,10 @@
         }
 
         .f-input {
-            background: rgba(15, 23, 42, 0.6);
+            background: var(--input-bg);
             border: 1px solid var(--border);
-            color: white;
+            color: var(--text-color);
+            /* white */
             padding: 10px 12px;
             border-radius: 6px;
             font-size: 13px;
@@ -364,7 +390,7 @@
             position: absolute;
             right: 10px;
             font-size: 12px;
-            color: #94a3b8;
+            color: var(--text-muted);
             cursor: pointer;
             background: transparent;
             border: none;
@@ -386,7 +412,7 @@
             display: flex;
             gap: 10px;
             font-size: 13px;
-            color: #cbd5e1;
+            color: var(--text-color);
             align-items: center;
             margin-top: 4px;
         }
@@ -412,7 +438,8 @@
             border-radius: 8px;
             background: #2563eb;
             border: none;
-            color: white;
+            color: var(--text-color);
+            /* white */
             font-weight: 500;
             cursor: pointer;
             font-size: 14px;
@@ -429,14 +456,14 @@
             border-radius: 8px;
             background: transparent;
             border: 1px solid var(--border);
-            color: #cbd5e1;
+            color: var(--text-color);
             cursor: pointer;
             font-size: 13px;
             transition: 0.2s;
         }
 
         .back-to-results-btn:hover {
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--item-hover-bg);
         }
 
         .results-panel-container {
@@ -459,9 +486,9 @@
         }
 
         .edit-filters-btn {
-            background: rgba(255, 255, 255, 0.1);
+            background: var(--item-hover-bg);
             border: none;
-            color: #cbd5e1;
+            color: var(--text-color);
             padding: 6px 12px;
             border-radius: 6px;
             font-size: 12px;
@@ -495,7 +522,8 @@
             padding: 24px;
             width: 320px;
             position: relative;
-            color: white;
+            color: var(--text-color);
+            /* white */
             box-shadow: 0 4px 24px rgba(0, 0, 0, 0.3);
         }
 
@@ -511,7 +539,7 @@
             right: 16px;
             background: transparent;
             border: none;
-            color: #94a3b8;
+            color: var(--text-muted);
             font-size: 20px;
             cursor: pointer;
         }
@@ -522,13 +550,14 @@
             padding: 12px;
             border-bottom: 1px solid var(--border);
             align-items: center;
-            color: #cbd5e1;
+            color: var(--text-color);
             font-size: 14px;
         }
 
         .delete-user-btn {
             background: #ef4444;
-            color: white;
+            color: var(--text-color);
+            /* white */
             border: none;
             padding: 6px 10px;
             border-radius: 4px;
@@ -548,7 +577,8 @@
         .author-name {
             font-size: 20px;
             font-weight: 600;
-            color: white;
+            color: var(--text-color);
+            /* white */
             margin: 0 0 8px 0;
             display: flex;
             align-items: center;
@@ -557,14 +587,14 @@
 
         .author-aliases {
             font-size: 13px;
-            color: #94a3b8;
+            color: var(--text-muted);
             margin: 0 0 12px 0;
             font-style: italic;
         }
 
         .author-bio {
             font-size: 14px;
-            color: #cbd5e1;
+            color: var(--text-color);
             line-height: 1.6;
             margin: 0;
             display: -webkit-box;
@@ -579,7 +609,8 @@
             align-items: center;
             gap: 8px;
             background: #10b981;
-            color: white;
+            color: var(--text-color);
+            /* white */
             text-decoration: none;
             padding: 8px 16px;
             border-radius: 6px;
@@ -600,9 +631,10 @@
             width: 100%;
             padding: 10px;
             border-radius: 8px;
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--item-hover-bg);
             border: 1px solid var(--border);
-            color: white;
+            color: var(--text-color);
+            /* white */
             font-size: 14px;
             font-weight: 500;
             cursor: pointer;
@@ -611,7 +643,7 @@
         }
 
         .social-btn:hover {
-            background: rgba(255, 255, 255, 0.1);
+            background: var(--item-hover-bg);
         }
 
         .auth-divider {
@@ -619,7 +651,7 @@
             align-items: center;
             text-align: center;
             margin: 16px 0;
-            color: #64748b;
+            color: var(--text-muted);
             font-size: 13px;
         }
 
@@ -674,7 +706,7 @@
             top: 50px;
             left: 0;
             width: 100%;
-            background: rgba(30, 41, 59, 0.95);
+            background: var(--modal-bg);
             backdrop-filter: blur(8px);
             border: 1px solid var(--border);
             border-radius: 8px;
@@ -690,7 +722,7 @@
             cursor: pointer;
             font-size: 13px;
             border-bottom: 1px solid var(--border);
-            color: #cbd5e1;
+            color: var(--text-color);
             transition: background 0.2s;
         }
 
@@ -699,8 +731,9 @@
         }
 
         .suggestion-item:hover {
-            background: rgba(255, 255, 255, 0.05);
-            color: white;
+            background: var(--item-hover-bg);
+            color: var(--text-color);
+            /* white */
         }
 
         .suggestion-match {
@@ -722,6 +755,9 @@
                     style="margin: 0; font-size: 28px; font-weight: 800; background: linear-gradient(135deg, #38bdf8, #3b82f6); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; letter-spacing: -0.5px; filter: drop-shadow(0 4px 6px rgba(59, 130, 246, 0.3));">
                     LibUZ</h1>
                 <div style="display: flex; gap: 8px;">
+                    <button class="edit-filters-btn" id="theme-toggle-btn"
+                        style="width: 38px; padding: 0; display: flex; align-items: center; justify-content: center;"
+                        onclick="toggleTheme()">☀️</button>
                     <button class="edit-filters-btn" id="login-btn-header"
                         style="background: var(--accent); color: white;" onclick="openAuthModal()">Kirish</button>
                     <button class="edit-filters-btn" id="admin-btn" style="display:none;"
@@ -984,7 +1020,7 @@
         let edgesDataset = new vis.DataSet([]);
 
         // Initialize Vanta.js WebGL Interactive Background
-        VANTA.NET({
+        window.vantaEffect = VANTA.NET({
             el: "#vanta-bg",
             mouseControls: true,
             touchControls: true,
@@ -1000,6 +1036,50 @@
             spacing: 16.00,
             showDots: true
         });
+
+        // Theme Logic
+        function initTheme() {
+            const savedTheme = localStorage.getItem('app-theme') || 'dark';
+            if (savedTheme === 'light') {
+                document.body.classList.add('light-mode');
+                document.getElementById('theme-toggle-btn').textContent = '🌙';
+                if (window.vantaEffect) {
+                    window.vantaEffect.setOptions({
+                        backgroundColor: 0xf8fafc,
+                        color: 0x2563eb
+                    });
+                }
+            }
+        }
+
+        function toggleTheme() {
+            const isLight = document.body.classList.toggle('light-mode');
+            const newTheme = isLight ? 'light' : 'dark';
+            localStorage.setItem('app-theme', newTheme);
+
+            const btn = document.getElementById('theme-toggle-btn');
+            btn.textContent = isLight ? '🌙' : '☀️';
+
+            if (window.vantaEffect) {
+                window.vantaEffect.setOptions({
+                    backgroundColor: isLight ? 0xf8fafc : 0x0f172a,
+                    color: isLight ? 0x2563eb : 0x3b82f6
+                });
+            }
+            // Update network styling if active
+            if (network) {
+                network.setOptions({
+                    nodes: {
+                        font: {
+                            color: isLight ? '#0f172a' : '#f8fafc',
+                            strokeColor: isLight ? '#f8fafc' : '#0f172a'
+                        }
+                    }
+                });
+            }
+        }
+
+        document.addEventListener('DOMContentLoaded', initTheme);
 
         // DOM Elements
         const advancedForm = document.getElementById('advanced-search-form');
@@ -1171,16 +1251,20 @@
                 edges: edgesDataset
             };
 
+            const isLight = document.body.classList.contains('light-mode');
+            const fontColor = isLight ? '#0f172a' : '#f8fafc';
+            const strokeColor = isLight ? '#f8fafc' : '#0f172a';
+
             const options = {
                 nodes: {
                     shape: 'dot',
                     font: {
-                        color: '#f8fafc', // Lighter text color
+                        color: fontColor,
                         size: 13,
                         face: 'Inter',
                         vadjust: 8,
-                        strokeWidth: 3, // Add dark stroke outline to make it readable over lines
-                        strokeColor: '#0f172a'
+                        strokeWidth: 3,
+                        strokeColor: strokeColor
                     },
                     borderWidth: 3,
                     shadow: false
