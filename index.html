@@ -1509,7 +1509,7 @@
                         noDownload.style.display = 'inline-block';
                     }
 
-                    if (paper.source !== 'CyberLeninka') {
+                    if (paper.id && (paper.id.startsWith('https://openalex.org/W') || paper.id.startsWith('W'))) {
                         exploreBtn.style.display = 'flex';
                         exploreBtn.onclick = () => {
                             loadPaperNetwork(paper.id);
@@ -1594,7 +1594,7 @@
 
                         const exploreBtn = document.getElementById('d-explore-btn');
 
-                        if (firstPaper.source !== 'CyberLeninka') {
+                        if (firstPaper.id && (firstPaper.id.startsWith('https://openalex.org/W') || firstPaper.id.startsWith('W'))) {
                             exploreBtn.style.display = 'flex';
                             exploreBtn.onclick = () => {
                                 loadPaperNetwork(firstPaper.id);
