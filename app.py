@@ -1001,6 +1001,56 @@ def get_category_network(category_name):
         "edges": edges
     })
 
+@app.route('/api/person_graph/<path:name>', methods=['GET'])
+def get_person_graph_mock(name):
+    # Faza 1: Mock JSON skeleton response
+    person_name = urllib.parse.unquote(name).title()
+    
+    nodes = [
+        {
+            "id": "Q1",
+            "label": person_name,
+            "title": f"Shaxs: {person_name}",
+            "group": "main",
+            "value": 40,
+            "description": f"{person_name} haqida qisqacha ma'lumot (Mock Data). Bu Wikidata orqali to'ldiriladi.",
+            "wikipediaUrl": f"https://uz.wikipedia.org/wiki/{person_name.replace(' ', '_')}"
+        },
+        {
+            "id": "Q2",
+            "label": "Ustoz 1",
+            "title": "Ustoz (Influenced by)",
+            "group": "cat_author",
+            "value": 20,
+            "description": "Ushbu shaxsga ta'sir o'tkazgan tarixiy shaxs."
+        },
+        {
+            "id": "Q3",
+            "label": "Shogird 1",
+            "title": "Shogird (Influenced)",
+            "group": "cat_reference",
+            "value": 15
+        },
+        {
+            "id": "Q4",
+            "label": "Asar 1",
+            "title": "Mashhur Asari",
+            "group": "cat_cited_by",
+            "value": 10
+        }
+    ]
+    
+    edges = [
+        {"from": "Q2", "to": "Q1", "arrows": "to", "label": "influenced_by"},
+        {"from": "Q1", "to": "Q3", "arrows": "to", "label": "influenced"},
+        {"from": "Q1", "to": "Q4", "arrows": "to", "label": "author_of"}
+    ]
+    
+    return jsonify({
+        "nodes": nodes,
+        "edges": edges
+    })
+
 @app.route('/')
 @app.route('/<path:path>')
 def serve_index_and_static(path='index.html'):
