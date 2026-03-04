@@ -1001,51 +1001,164 @@ def get_category_network(category_name):
         "edges": edges
     })
 
+# Simple in-memory cache for Wikidata (Faza 2: Optimizatsiya)
+WIKIDATA_CACHE = {}
+
+def search_wikidata_entity(name):
+    # Keshni tekshirish
+    cache_key = f"search_{name}"
+    if cache_key in WIKIDATA_CACHE:
+        return WIKIDATA_CACHE[cache_key]
+        
+    url = f"https://www.wikidata.org/w/api.php?action=wbsearchentities&search={urllib.parse.quote(name)}&language=uz&uselang=en&format=json"
+    headers = {'User-Agent': 'LibUZ/1.0 (https://libuz.vercel.app)'}
+    try:
+        response = requests.get(url, headers=headers, timeout=5)
+        if response.status_code == 200:
+            data = response.json()
+            if data.get("search") and len(data["search"]) > 0:
+                entities = data["search"]
+                target_entity = entities[0] # Default to first
+                
+                # Odam yoki Yozuvchini topishga harakat
+                for e in entities:
+                    desc = str(e.get('description', '')).lower()
+                    if 'human' in desc or 'poet' in desc or 'writer' in desc or 'politician' in desc or 'scientist' in desc:
+                        target_entity = e
+                        break
+                        
+                WIKIDATA_CACHE[cache_key] = target_entity
+                return target_entity
+    except Exception as e:
+        print(f"Wikidata Search Error: {e}")
+    return None
+
+def get_wikidata_network(entity_id, max_nodes=30):
+    cache_key = f"network_{entity_id}"
+    if cache_key in WIKIDATA_CACHE:
+        return WIKIDATA_CACHE[cache_key]
+        
+    query = """
+    SELECT ?rel ?relLabel ?item ?itemLabel ?itemDescription ?dir WHERE {
+      VALUES ?relProp { wdt:P737 wdt:P802 wdt:P1066 wdt:P800 wdt:P69 wdt:P26 wdt:P40 wdt:P22 wdt:P25 wdt:P3373 wdt:P1038 wdt:P106 }
+      
+      { 
+        wd:%s ?relProp ?item . 
+        BIND("to_item" AS ?dir)
+      }
+      UNION
+      { 
+        ?item ?relProp wd:%s . 
+        BIND("from_item" AS ?dir)
+      }
+      
+      ?rel wikibase:directClaim ?relProp .
+      
+      SERVICE wikibase:label { bd:serviceParam wikibase:language "[AUTO_LANGUAGE],uz,en,ru". }
+    } LIMIT %d
+    """ % (entity_id, entity_id, max_nodes)
+    
+    url = "https://query.wikidata.org/sparql"
+    headers = {
+        'User-Agent': 'LibUZ/1.0 (https://libuz.vercel.app)',
+        'Accept': 'application/sparql-results+json'
+    }
+    try:
+        response = requests.get(url, params={'query': query}, headers=headers, timeout=10)
+        if response.status_code == 200:
+            data = response.json()
+            WIKIDATA_CACHE[cache_key] = data
+            return data
+    except Exception as e:
+        print(f"SPARQL Error: {e}")
+    return None
+
 @app.route('/api/person_graph/<path:name>', methods=['GET'])
-def get_person_graph_mock(name):
-    # Faza 1: Mock JSON skeleton response
+def get_person_graph(name):
     person_name = urllib.parse.unquote(name).title()
     
-    nodes = [
-        {
-            "id": "Q1",
-            "label": person_name,
-            "title": f"Shaxs: {person_name}",
-            "group": "main",
-            "value": 40,
-            "description": f"{person_name} haqida qisqacha ma'lumot (Mock Data). Bu Wikidata orqali to'ldiriladi.",
-            "wikipediaUrl": f"https://uz.wikipedia.org/wiki/{person_name.replace(' ', '_')}"
-        },
-        {
-            "id": "Q2",
-            "label": "Ustoz 1",
-            "title": "Ustoz (Influenced by)",
-            "group": "cat_author",
-            "value": 20,
-            "description": "Ushbu shaxsga ta'sir o'tkazgan tarixiy shaxs."
-        },
-        {
-            "id": "Q3",
-            "label": "Shogird 1",
-            "title": "Shogird (Influenced)",
+    # 1. Ask Wikidata for the Q-ID
+    entity = search_wikidata_entity(person_name)
+    
+    if not entity:
+        return jsonify({"error": f"{person_name} nomli shaxs Wikidata'dan topilmadi."}), 404
+        
+    main_id = entity['id']
+    main_label = entity.get('label', person_name)
+    main_desc = entity.get('description', 'Ma\'lumot yo\'q')
+    
+    nodes = [{
+        "id": main_id,
+        "label": main_label,
+        "title": f"Shaxs: {main_label}",
+        "group": "main",
+        "value": 40,
+        "description": main_desc,
+        "wikidataUrl": f"https://www.wikidata.org/wiki/{main_id}",
+        "wikipediaUrl": f"https://uz.wikipedia.org/wiki/{main_label.replace(' ', '_')}"
+    }]
+    edges = []
+    
+    # 2. Extract network relationships via SPARQL
+    network_data = get_wikidata_network(main_id)
+    
+    if network_data and 'results' in network_data and 'bindings' in network_data['results']:
+        results = network_data['results']['bindings']
+        added_nodes = set([main_id])
+        
+        for r in results:
+            item_id = r.get('item', {}).get('value', '').split('/')[-1]
+            if not item_id or item_id in added_nodes:
+                continue
+                
+            item_label = r.get('itemLabel', {}).get('value', item_id)
+            item_desc = r.get('itemDescription', {}).get('value', '')
+            rel_label = r.get('relLabel', {}).get('value', 'related')
+            direction = r.get('dir', {}).get('value', 'to_item')
+            
+            # Categorize nodes
+            group = "cat_reference" # default
+            if 'influenced by' in rel_label or 'student of' in rel_label or 'educated at' in rel_label:
+                group = "cat_author" # Mentors / Predecessors
+            elif 'influenced' in rel_label:
+                group = "cat_cited_by" # Students / Successors
+            elif 'child' in rel_label or 'spouse' in rel_label or 'father' in rel_label or 'mother' in rel_label or 'relative' in rel_label:
+                group = "category" # Family
+                
+            nodes.append({
+                "id": item_id,
+                "label": item_label[:15] + ".." if len(item_label) > 15 else item_label,
+                "title": f"Munosabat: {rel_label}\nNomi: {item_label}",
+                "group": group,
+                "value": 15,
+                "description": f"{item_label} - {item_desc}",
+                "wikidataUrl": f"https://www.wikidata.org/wiki/{item_id}"
+            })
+            added_nodes.add(item_id)
+            
+            # Edge direction
+            if direction == 'to_item':
+                edges.append({
+                    "from": main_id, "to": item_id, "arrows": "to", "label": rel_label
+                })
+            else:
+                edges.append({
+                    "from": item_id, "to": main_id, "arrows": "to", "label": rel_label
+                })
+                
+    if len(nodes) == 1:
+        # No relationships found, add a placeholder node to indicate emptiness
+        nodes.append({
+            "id": "empty",
+            "label": "Taqqoslash ob'ekti yo'q",
+            "title": "Wikidata da ushbu shaxs uchun bog'lanishlar kiritilmagan",
             "group": "cat_reference",
-            "value": 15
-        },
-        {
-            "id": "Q4",
-            "label": "Asar 1",
-            "title": "Mashhur Asari",
-            "group": "cat_cited_by",
             "value": 10
-        }
-    ]
-    
-    edges = [
-        {"from": "Q2", "to": "Q1", "arrows": "to", "label": "influenced_by"},
-        {"from": "Q1", "to": "Q3", "arrows": "to", "label": "influenced"},
-        {"from": "Q1", "to": "Q4", "arrows": "to", "label": "author_of"}
-    ]
-    
+        })
+        edges.append({
+            "from": main_id, "to": "empty", "arrows": ""
+        })
+
     return jsonify({
         "nodes": nodes,
         "edges": edges
