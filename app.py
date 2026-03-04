@@ -26,24 +26,7 @@ if os.path.exists(env_path):
 app = Flask(__name__)
 CORS(app) # Enable CORS for frontend communication
 
-@app.route('/')
-@app.route('/<path:path>')
-def serve_index_and_static(path='index.html'):
-    directory = os.path.dirname(os.path.abspath(__file__))
-    # Ruxsat etilgan fayl turlarini xavfsizlik uchun tekshiramiz
-    if path != 'index.html' and not path.endswith('.js') and not path.endswith('.css') and not path.endswith('.html'):
-        return jsonify({"error": "Not found"}), 404
-        
-    served_path = path
-    if not os.path.exists(os.path.join(directory, path)):
-        served_path = 'index.html'
-        
-    response = send_from_directory(directory, served_path)
-    if served_path == 'index.html':
-        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
-        response.headers['Pragma'] = 'no-cache'
-        response.headers['Expires'] = '0'
-    return response
+
 
 # Vercel Serverless environment has a read-only filesystem except for /tmp
 if os.environ.get('VERCEL') == '1':
@@ -1017,6 +1000,25 @@ def get_category_network(category_name):
         "nodes": nodes,
         "edges": edges
     })
+
+@app.route('/')
+@app.route('/<path:path>')
+def serve_index_and_static(path='index.html'):
+    directory = os.path.dirname(os.path.abspath(__file__))
+    # Ruxsat etilgan fayl turlarini xavfsizlik uchun tekshiramiz
+    if path != 'index.html' and not path.endswith('.js') and not path.endswith('.css') and not path.endswith('.html'):
+        return jsonify({"error": "Not found"}), 404
+        
+    served_path = path
+    if not os.path.exists(os.path.join(directory, path)):
+        served_path = 'index.html'
+        
+    response = send_from_directory(directory, served_path)
+    if served_path == 'index.html':
+        response.headers['Cache-Control'] = 'no-store, no-cache, must-revalidate, max-age=0'
+        response.headers['Pragma'] = 'no-cache'
+        response.headers['Expires'] = '0'
+    return response
 
 if __name__ == '__main__':
     app.run(debug=True)
