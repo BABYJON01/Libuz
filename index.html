@@ -1408,18 +1408,26 @@
                 }
             });
 
-            // Handle double click to expand network
+            // Handle double click to expand network or search
             network.on("doubleClick", function (params) {
                 if (params.nodes.length > 0) {
                     const nodeId = params.nodes[0];
                     const node = nodesDataset.get(nodeId);
 
-                    if (node.group === 'author' || node.group === 'cat_author') {
-                        loadAuthorNetwork(node.label);
-                    } else if (node.group === 'main' || node.group === 'reference' || node.group === 'cited_by') {
+                    if (nodeId.startsWith('https://openalex.org/W') || nodeId.startsWith('cyber_')) {
+                        // It's a valid paper ID
                         loadPaperNetwork(nodeId);
+                    } else if (node.group === 'cat_author' || node.group === 'cat_reference' || node.group === 'cat_cited_by') {
+                        console.log("Kategoriya tuguni bosildi.");
+                    } else if (node.id.startsWith('author_main_')) {
+                        console.log("Asosiy muallif tuguni.");
                     } else {
-                        console.log("Bu tugun uchun qo'shimcha tarmoq mavjud emas.");
+                        // For all other text nodes (like professions, organizations, names), perform a search
+                        const mainInput = document.getElementById('main-search-input');
+                        if (mainInput) {
+                            mainInput.value = node.label;
+                            document.getElementById('main-search-form').dispatchEvent(new Event('submit', { cancelable: true, bubbles: true }));
+                        }
                     }
                 }
             });
