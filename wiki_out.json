@@ -1,0 +1,596 @@
+{
+  "head": {
+    "vars": [
+      "rel",
+      "relLabel",
+      "item",
+      "itemLabel",
+      "itemDescription",
+      "dir"
+    ]
+  },
+  "results": {
+    "bindings": [
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P22"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q88665"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "father"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Hermann Einstein"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "German electrical engineer and businessman, father of Albert Einstein (1847–1902)"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P25"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q4357787"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "mother"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Pauline Koch"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "mother of Albert Einstein (1858-1920)"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P26"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q68761"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "spouse"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Elsa Einstein"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "second wife and cousin of Albert Einstein (1876-1936)"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P26"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q76346"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "spouse"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Mileva Marić"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Serbian mathematician and wife of Albert Einstein (1875–1948)"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P40"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q118253"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "child"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Eduard Einstein"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "second son of Albert Einstein and his first wife Mileva Marić (1910–1965)"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P40"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q123371"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "child"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Hans Albert Einstein"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Swiss-American engineer and educator (1904-1973)"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P40"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q468357"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "child"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Lieserl (Einstein)"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "possibly a daughter of Albert Einstein (1902–1903)"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P69"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q11942"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "educated at"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "ETH Zurich"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "public research university in Zurich"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P69"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q206702"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "educated at"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "University of Zurich"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "public research university in Zurich, Switzerland"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P69"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q435651"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "educated at"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "old Kantonsschule (Albert Einstein House)"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "school building in Aarau in the canton of Aargau, Switzerland"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P69"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q1876751"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "educated at"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Luitpold-Gymnasium"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "former high school in Munich, today Albert-Einstein-Gymnasium"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P737"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q935"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "influenced by"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Isaac Newton"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "English mathematician and physicist (1642–1727)"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P737"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q991"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "influenced by"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Fyodor Dostoyevsky"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Russian novelist (1821–1881)"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P737"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q1001"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "influenced by"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Mahatma Gandhi"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Indian independence activist (1869–1948)"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P737"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q9095"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "influenced by"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "James Clerk Maxwell"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Scottish physicist (1831–1879)"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P737"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q19185"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "influenced by"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "George Bernard Shaw"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Irish playwright, critic, and polemicist (1856–1950)"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P737"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q25820"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "influenced by"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Thomas Young"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "English polymath (1773-1829)"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P737"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q35802"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "influenced by"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Benedictus de Spinoza"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Dutch philosopher (1632–1677)"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P737"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q37160"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "influenced by"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "David Hume"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Scottish philosopher, economist, and historian (1711-1776)"
+        }
+      },
+      {
+        "rel": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/P737"
+        },
+        "item": {
+          "type": "uri",
+          "value": "http://www.wikidata.org/entity/Q38193"
+        },
+        "dir": {
+          "type": "literal",
+          "value": "to_item"
+        },
+        "relLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "influenced by"
+        },
+        "itemLabel": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "Arthur Schopenhauer"
+        },
+        "itemDescription": {
+          "xml:lang": "en",
+          "type": "literal",
+          "value": "German philosopher (1788–1860)"
+        }
+      }
+    ]
+  }
+}
