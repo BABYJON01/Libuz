@@ -253,6 +253,50 @@ AUTHOR_ALIASES = {
     "fazliddin ravshanov": ["fazliddin ravshanovich ravshanov", "ravshanov"]
 }
 
+# Semantic Data for Categorical Entities mapped from Wikipedia profiles
+CATEGORY_DATA = {
+    "siyosatchilar": {
+        "title": "Siyosatchilar",
+        "groups": [
+            {"name": "Davlat rahbarlari", "people": ["Shavkat Mirziyoyev", "Vladimir Putin", "Rejep Tayyip Erdog'an"]},
+            {"name": "Parlament a'zolari", "people": ["Tanzila Norboyeva", "Nurdinjon Ismoilov", "Alisher Qodirov"]},
+            {"name": "Diplomatlar", "people": ["Baxtiyor Saidov", "Abdulaziz Komilov"]}
+        ]
+    },
+    "ijodkorlar": {
+        "title": "Ijodkorlar",
+        "groups": [
+            {"name": "Yozuvchilar", "people": ["Abdulla Qodiriy", "O'tkir Hoshimov", "Pirimqul Qodirov"]},
+            {"name": "Shoirlar", "people": ["Erkin Vohidov", "Abdulla Oripov", "Muhammad Yusuf"]},
+            {"name": "Rassomlar", "people": ["Chingiz Ahmarov", "O'rol Tansiqboyev", "Akmal Nur"]},
+            {"name": "Rejissyorlar", "people": ["Shuhrat Abbosov", "Zulfiqor Musoqov", "Rihsiboy Muhammadjonov"]}
+        ]
+    },
+    "media shaxslari": {
+        "title": "Media Shaxslari",
+        "groups": [
+            {"name": "Aktyorlar", "people": ["Yodgor Sa'diyev", "Murod Rajabov", "Ubaydulla Omon"]},
+            {"name": "Blogerlar", "people": ["Xushnudbek Xudoyberdiyev", "Aziza Umarova", "Umid Gafurov"]},
+            {"name": "Jurnalistlar va boshlovchilar", "people": ["Qahramon Aslanov", "Alisher Uzoqov", "Rizanova"]}
+        ]
+    },
+    "ilmiy va akademik shaxslar": {
+        "title": "Ilmiy va Akademik shaxslar",
+        "groups": [
+            {"name": "Olimlar", "people": ["Abu Rayhon Beruniy", "Al-Xorazmiy", "Mirzo Ulug'bek", "Ibn Sino"]},
+            {"name": "Professorlar/Akademiklar", "people": ["Behzod Yo'ldoshev", "Po'lat Habibullayev", "Mahmud Salohiddinov"]}
+        ]
+    },
+    "sportchilar": {
+        "title": "Sportchilar",
+        "groups": [
+            {"name": "Futbolchilar", "people": ["Odil Ahmedov", "Eldor Shomurodov", "Maksim Shatskix"]},
+            {"name": "Bokschi va kurashchilar", "people": ["Bahodir Jalolov", "Hasanboy Do'smatov", "Artur Taymazov"]},
+            {"name": "Shaxmatchilar", "people": ["Rustam Qosimjonov", "Nodirbek Abdusattorov"]}
+        ]
+    }
+}
+
 # Semantic Data for Author Profile Knowledge Graph
 AUTHOR_SEMANTIC_DATA = {
     "alisher navoiy": {
@@ -912,6 +956,67 @@ def get_author_label(work):
 def _truncate_title(title, max_length=30):
     if not title: return "Untitled"
     return title[:max_length] + "..." if len(title) > max_length else title
+
+@app.route('/api/category/<path:category_name>/network', methods=['GET'])
+def get_category_network(category_name):
+    cat_name = urllib.parse.unquote(category_name).lower().strip()
+    
+    cat_data = CATEGORY_DATA.get(cat_name)
+    if not cat_data:
+        return jsonify({"error": "Kategoriya topilmadi."}), 404
+        
+    nodes = []
+    edges = []
+    
+    main_id = "cat_main_" + cat_name.replace(" ", "_").replace("'", "")
+    nodes.append({
+        "id": main_id,
+        "label": cat_data["title"],
+        "title": cat_data["title"],
+        "group": "main",
+        "value": 30,
+        "x": 0,
+        "y": 0,
+        "fixed": {"x": True, "y": True}
+    })
+    
+    uid = 0
+    for group in cat_data["groups"]:
+        uid += 1
+        group_id = f"group_{uid}_{main_id}"
+        nodes.append({
+            "id": group_id,
+            "label": group["name"],
+            "title": f"Turkum: {group['name']}",
+            "group": "cat_author",
+            "value": 20
+        })
+        edges.append({
+            "from": main_id,
+            "to": group_id,
+            "arrows": "to"
+        })
+        
+        for person in group["people"]:
+            uid += 1
+            person_id = f"person_{uid}_{main_id}"
+            nodes.append({
+                "id": person_id,
+                "label": person,
+                "title": f"Shaxs: {person}",
+                "group": "cat_reference",
+                "value": 15
+            })
+            edges.append({
+                "from": group_id,
+                "to": person_id,
+                "arrows": "to"
+            })
+            
+    return jsonify({
+        "nodes": nodes,
+        "edges": edges
+    })
 
 if __name__ == '__main__':
     app.run(debug=True)
