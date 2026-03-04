@@ -742,14 +742,41 @@ def get_author_network(author_name):
     
     if not semantic_data:
         # Generate generic fallback semantic profile
+        wiki_bio = get_wikipedia_summary(canonical_name)
+        
+        bio_text = wiki_bio if wiki_bio else "Biografiya ma'lumotlari mavjud emas."
+        
+        # Extract professions based on open source bio
+        bio_lower = bio_text.lower()
+        professions = set()
+        
+        if any(word in bio_lower for word in ['siyosat', 'davlat', 'prezident', 'parlament', 'diplomat', 'vazir', 'hokim']):
+            professions.add("Siyosatchilar")
+        if any(word in bio_lower for word in ['yozuvchi', 'shoir', 'rassom', 'rejissyor', 'ijodkor', 'yozgan']):
+            professions.add("Ijodkorlar")
+        if any(word in bio_lower for word in ['aktyor', 'aktrisa', 'bloger', 'boshlovchi', 'jurnalist', "qo'shiqchi", "san'atkor"]):
+            professions.add("Media shaxslari")
+        if any(word in bio_lower for word in ['olim', 'tadqiqotchi', 'professor', 'akademik', 'fan ', 'ilmiy', 'dotsent']):
+            professions.add("Ilmiy va akademik shaxslar")
+        if any(word in bio_lower for word in ['sportchi', 'futbolchi', 'tennischi', 'baksyor', 'chempion']):
+            professions.add("Sportchilar")
+            
+        if not professions:
+            professions.add("Ochiq manbalar orqali topish")
+            
+        # Optional truncating for the bio label inside the graph node
+        bio_preview = bio_text
+        if len(bio_preview) > 60:
+             bio_preview = bio_preview[:57] + "..."
+             
         semantic_data = {
             "name": author_name.title(),
-            "names": [author_name.title()],
-            "identifiers": ["Qidiruv orqali topilgan"],
-            "bio": ["Tug'ilgan va vafoti: Noma'lum"],
-            "profession": ["Muallif", "Olim/Tadqiqotchi"],
+            "names": [author_name.title(), author_name.upper()],
+            "identifiers": ["Wikipedia Id: " + author_name.replace(' ', '_')],
+            "bio": [bio_preview],
+            "profession": list(professions),
             "works": [f"{author_name.title()} asarlari"],
-            "organizations": ["Ilmiy baza orqali bog'langan"]
+            "organizations": ["Wikipedia orqali ma'lumotlar"]
         }
 
     nodes = []
