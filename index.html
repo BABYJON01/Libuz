@@ -1421,6 +1421,8 @@
                         console.log("Kategoriya yozuvi bosildi. Hech qanday hodisa yo'q.");
                     } else if (node.id.startsWith('author_main_')) {
                         console.log("Asosiy muallif tuguni.");
+                    } else if (node.id.startsWith('item_') && ['Siyosatchilar', 'Ijodkorlar', 'Media shaxslari', 'Ilmiy va akademik shaxslar', 'Sportchilar'].includes(node.label)) {
+                        loadCategoryNetwork(node.label);
                     } else {
                         // For all other text nodes (items branching out, like professions, organizations, bio text), perform a search
                         const mainInput = document.getElementById('main-search-input');
@@ -1728,6 +1730,36 @@
                     });
                 } else {
                     alert("Muallif tarmog'ini yuklashda xatolik: " + (data.error || ''));
+                }
+            } catch (err) {
+                console.error(err);
+                alert('Tizim bilan ulanishda xato');
+            } finally {
+                toggleLoader(false);
+            }
+        }
+
+        // Load schematic category network
+        async function loadCategoryNetwork(categoryName) {
+            toggleLoader(true, "Kategoriya tarmog'i tuzilmoqda...");
+
+            try {
+                const encodedName = encodeURIComponent(categoryName);
+                const res = await fetch(`${API_BASE}/category/${encodedName}/network`);
+                const data = await res.json();
+
+                if (res.ok) {
+                    nodesDataset.clear();
+                    edgesDataset.clear();
+
+                    nodesDataset.add(data.nodes);
+                    edgesDataset.add(data.edges);
+
+                    network.fit({
+                        animation: { duration: 1000, easingFunction: "easeInOutQuad" }
+                    });
+                } else {
+                    alert("Kategoriya tarmog'ini yuklashda xatolik: " + (data.error || ''));
                 }
             } catch (err) {
                 console.error(err);
