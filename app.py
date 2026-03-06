@@ -1,4 +1,5 @@
 import os
+import json
 import sqlite3
 import requests
 import concurrent.futures
@@ -1004,6 +1005,25 @@ def get_category_network(category_name):
 # Simple in-memory cache for Wikidata (Faza 2: Optimizatsiya)
 WIKIDATA_CACHE = {}
 
+def load_local_authors():
+    try:
+        with open('local_authors.json', 'r', encoding='utf-8') as f:
+            return json.load(f)
+    except Exception as e:
+        print(f"Baza yuklashda xato: {e}")
+        return []
+
+LOCAL_AUTHORS_DB = load_local_authors()
+
+def find_local_author(name):
+    name_lower = name.lower()
+    for author in LOCAL_AUTHORS_DB:
+        if name_lower in author['name'].lower():
+            return author
+        if author.get('alias') and name_lower in author['alias'].lower():
+            return author
+    return None
+
 def search_wikidata_entity(name):
     # Keshni tekshirish
     cache_key = f"search_{name}"
@@ -1077,11 +1097,74 @@ def get_wikidata_network(entity_id, max_nodes=30):
 def get_person_graph(name):
     person_name = urllib.parse.unquote(name).title()
     
-    # 1. Ask Wikidata for the Q-ID
+    # 0. Check local database first
+    local_author = find_local_author(person_name)
+    if local_author:
+        main_id = local_author['id']
+        main_label = local_author['name']
+        main_desc = local_author['description'] or local_author.get('alias') or "Jadvaldan kiritilgan mahalliy ma'lumot"
+        
+        nodes = [{
+            "id": main_id,
+            "label": main_label,
+            "title": f"Shaxs: {main_label}",
+            "group": "main",
+            "value": 40,
+            "description": main_desc,
+            "wikidataUrl": "",
+            "wikipediaUrl": ""
+        }]
+        
+        edges = []
+        
+        # Asarlari tugunlari
+        for i, work in enumerate(local_author.get('works', [])):
+            work_id = f"{main_id}_work_{i}"
+            nodes.append({
+                "id": work_id,
+                "label": work[:30] + '...' if len(work) > 30 else work,
+                "title": f"Asar: {work}",
+                "group": "book",
+                "value": 20,
+                "description": ""
+            })
+            edges.append({
+                "from": main_id,
+                "to": work_id,
+                "label": "yozgan",
+                "arrows": "to",
+                "color": "#9ca3af"
+            })
+            
+        # Kalit so'zlar / Aloqador shaxslar
+        for i, kw in enumerate(local_author.get('keywords', [])):
+            kw_id = f"{main_id}_kw_{i}"
+            nodes.append({
+                "id": kw_id,
+                "label": kw[:30] + '...' if len(kw) > 30 else kw,
+                "title": f"Aloqador: {kw}",
+                "group": "institution",
+                "value": 20,
+                "description": ""
+            })
+            edges.append({
+                "from": main_id,
+                "to": kw_id,
+                "label": "aloqador",
+                "arrows": "to",
+                "color": "#9ca3af"
+            })
+            
+        return jsonify({
+            "nodes": nodes,
+            "edges": edges
+        })
+    
+    # 1. Ask Wikidata for the Q-ID (Fallback)
     entity = search_wikidata_entity(person_name)
     
     if not entity:
-        return jsonify({"error": f"{person_name} nomli shaxs Wikidata'dan topilmadi."}), 404
+        return jsonify({"error": f"{person_name} nomli shaxs Wikidata va mahalliy bazadan topilmadi."}), 404
         
     main_id = entity['id']
     main_label = entity.get('label', person_name)
