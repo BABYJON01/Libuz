@@ -1016,12 +1016,42 @@ def load_local_authors():
 LOCAL_AUTHORS_DB = load_local_authors()
 
 def find_local_author(name):
+    def simplify(text):
+        if not text: return ""
+        # Remove apostrophes and standardize common confusing letters
+        t = text.lower().replace("'", "").replace("‘", "").replace("’", "").replace("`", "")
+        t = t.replace("o", "a").replace("u", "a").replace("ў", "у").replace("ё", "йо")
+        return t
+
     name_lower = name.lower()
+    name_translit = uz_transliterate(name).lower()
+    
+    matches_simp = [simplify(name_lower), simplify(name_translit)]
+    
     for author in LOCAL_AUTHORS_DB:
-        if name_lower in author['name'].lower():
-            return author
-        if author.get('alias') and name_lower in author['alias'].lower():
-            return author
+        author_name = author.get('name', '').lower()
+        author_name_translit = uz_transliterate(author_name).lower()
+        
+        targets_simp = [simplify(author_name), simplify(author_name_translit)]
+        
+        aliases = author.get('alias', '')
+        if aliases:
+            aliases_str = " ".join(aliases).lower() if isinstance(aliases, list) else str(aliases).lower()
+            aliases_translit = uz_transliterate(aliases_str).lower()
+            targets_simp.extend([simplify(aliases_str), simplify(aliases_translit)])
+            
+        other_names = author.get('other_names', [])
+        if other_names:
+            other_names_str = " ".join(other_names).lower() if isinstance(other_names, list) else str(other_names).lower()
+            other_names_translit = uz_transliterate(other_names_str).lower()
+            targets_simp.extend([simplify(other_names_str), simplify(other_names_translit)])
+            
+        for m in matches_simp:
+            if not m: continue
+            for t in targets_simp:
+                if not t: continue
+                if m in t:
+                    return author
     return None
 
 def search_wikidata_entity(name):
