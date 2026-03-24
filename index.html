@@ -1665,6 +1665,16 @@
 
             try {
                 const res = await fetch(`${API_BASE}/search?${params.toString()}`);
+                
+                const contentType = res.headers.get("content-type");
+                if (!res.ok) {
+                    if (contentType && contentType.includes("application/json")) {
+                        const errData = await res.json();
+                        throw new Error(`${errData.error || 'Noma\'lum xatolik'}`);
+                    }
+                    throw new Error(`Server javob bermadi (Xato: ${res.status}). Server yangilanmoqda yoki band bo'lishi mumkin.`);
+                }
+
                 const data = await res.json();
 
                 if (res.ok) {
@@ -1960,6 +1970,18 @@
             try {
                 const encodedName = encodeURIComponent(personName);
                 const res = await fetch(`${API_BASE}/person_graph/${encodedName}`);
+                
+                const contentType = res.headers.get("content-type");
+                if (!res.ok) {
+                    if (contentType && contentType.includes("application/json")) {
+                        const errData = await res.json();
+                        alert('Tarmoqni yuklashda xatolik: ' + (errData.error || 'Noma\'lum xato.'));
+                    } else {
+                        alert(`Server javob qaytara olmadi (Xato: ${res.status}). Vaqt tugagan (Timeout) bo'lishi mumkin.`);
+                    }
+                    return;
+                }
+
                 const data = await res.json();
 
                 if (res.ok) {
