@@ -1310,7 +1310,10 @@ def get_person_graph(name):
         edges = []
         
         # Asarlari tugunlari
-        for i, work in enumerate(local_author.get('works', [])):
+        works_data = local_author.get('works', [])
+        works_list = [w.strip() for w in works_data.split(',')] if isinstance(works_data, str) else works_data
+        for i, work in enumerate(works_list):
+            if not work: continue
             work_id = f"{main_id}_work_{i}"
             nodes.append({
                 "id": work_id,
