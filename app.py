@@ -1292,9 +1292,9 @@ def get_person_graph(name):
     # 0. Check local database first
     local_author = find_local_author(person_name)
     if local_author:
-        main_id = local_author['id']
-        main_label = local_author['name']
-        main_desc = local_author['description'] or local_author.get('alias') or "Jadvaldan kiritilgan mahalliy ma'lumot"
+        main_id = local_author.get('id', f'local_id_unknown')
+        main_label = local_author.get('name', person_name)
+        main_desc = local_author.get('description') or local_author.get('alias') or "Jadvaldan kiritilgan mahalliy ma'lumot"
         
         nodes = [{
             "id": main_id,
