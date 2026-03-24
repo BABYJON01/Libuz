@@ -54,6 +54,14 @@ def init_db():
     if not c.fetchone():
         c.execute("INSERT INTO users (username, password, role) VALUES (?, ?, ?)", 
                   ('admin', generate_password_hash('admin123'), 'admin'))
+    
+    # Track search queries for Hybrid Recommendation system
+    c.execute('''CREATE TABLE IF NOT EXISTS user_history
+                 (id INTEGER PRIMARY KEY AUTOINCREMENT,
+                  username TEXT NOT NULL,
+                  query TEXT NOT NULL,
+                  timestamp DATETIME DEFAULT CURRENT_TIMESTAMP)''')
+                  
     conn.commit()
     conn.close()
 
@@ -520,6 +528,7 @@ def uz_transliterate(text):
 @app.route('/api/search', methods=['GET'])
 def search_papers():
     query = request.args.get('q', '').strip()
+    username = request.args.get('username', '').strip()
     year_start = request.args.get('year_start', '')
     year_end = request.args.get('year_end', '')
     authors = request.args.get('authors', '').strip()
@@ -529,6 +538,19 @@ def search_papers():
     max_citations = request.args.get('max_cites', '')
     work_type = request.args.get('work_type', '').strip()
     
+    user_past_queries = []
+    if query and username:
+        conn = get_db_connection()
+        try:
+            conn.execute("INSERT INTO user_history (username, query) VALUES (?, ?)", (username, query))
+            conn.commit()
+            history = conn.execute("SELECT query FROM user_history WHERE username = ? ORDER BY timestamp DESC LIMIT 20", (username,)).fetchall()
+            user_past_queries = [h['query'].lower() for h in history]
+        except Exception as e:
+            print(f"History tracking error: {e}")
+        finally:
+            conn.close()
+
     # Expand query intelligently
     q_expanded = ""
     author_profile = None
@@ -603,13 +625,11 @@ def search_papers():
         filters.append(f"cited_by_count:<{max_citations}")
         
     if work_type:
-        # e.g. article => journal-article, book => book, poetry => book?
-        # we can just pass the raw type to OpenAlex
         filters.append(f"type:{work_type}")
         
     filter_string = ",".join(filters)
         
-    api_url = f"{OPENALEX_API_URL}/works?per-page=20"
+    api_url = f"{OPENALEX_API_URL}/works?per-page=40"
     if q_expanded:
         api_url += f"&search={q_expanded}"
     if filter_string:
@@ -624,12 +644,10 @@ def search_papers():
         data = response.json()
         results = []
         
-        # Parallel translate titles to Uzbek for fast UI response
         def process_work(work):
             original_title = work.get("title", "Untitled")
             uz_title = safe_translate(original_title, 'uz')
             
-            # Check for open access download link
             oa_url = None
             if work.get("open_access", {}).get("is_oa"):
                 oa_url = work.get("open_access", {}).get("oa_url")
@@ -637,32 +655,92 @@ def search_papers():
             return {
                 "id": work.get("id"),
                 "title": uz_title,
-                "original_title": original_title,
+                "original_title": str(original_title),
                 "publication_year": work.get("publication_year"),
                 "cited_by_count": work.get("cited_by_count", 0),
+                "relevance_score": float(work.get("relevance_score") or 0),
                 "authors": [author.get("author", {}).get("display_name") for author in work.get("authorships", [])],
-                "download_url": oa_url
+                "download_url": oa_url,
+                "source": "OpenAlex"
             }
 
         with concurrent.futures.ThreadPoolExecutor(max_workers=10) as executor:
             works = data.get('results', [])
             results = list(executor.map(process_work, works))
 
-        # Fetch CyberLeninka results
         cyber_results = get_cyberleninka_results(query)
         if cyber_results:
-             # Translate CyberLeninka titles to Uzbek as well
              for cr in cyber_results:
                  cr['title'] = safe_translate(cr['original_title'], 'uz')
+                 cr['relevance_score'] = 100.0 if query.lower() in str(cr['original_title']).lower() else 50.0
              results.extend(cyber_results)
              
-        # Broad Entity Fallback: If academic papers are scarce (e.g., searching for politicians/actors)
         if len(results) <= 3 and not (authors or journals):
             books = get_google_books_results(query)
+            for b in books:
+                b['relevance_score'] = 80.0 if query.lower() in str(b['original_title']).lower() else 40.0
             results.extend(books)
 
+        # Hybrid Recommendation Ranking
+        max_cites = max([r.get('cited_by_count', 0) for r in results] + [1])
+        max_rel = max([r.get('relevance_score', 0) for r in results] + [1.0])
+        
+        exact_matches = []
+        related_results = []
+        recommended = []
+        
+        q_lower = query.lower()
+        
+        for r in results:
+            rel = r.get("relevance_score", 0) / max_rel
+            title_lower = r.get("original_title", "").lower()
+            
+            if q_lower in title_lower:
+                rel = max(rel, 0.9)
+                
+            pop = r.get("cited_by_count", 0) / max_cites
+            
+            year = r.get("publication_year")
+            if not str(year).isdigit(): year = 2000
+            year = int(year)
+            rec = max(0, min(1, (year - 1950) / 75))
+            
+            u_int = 0
+            for pq in user_past_queries:
+                if pq in title_lower or pq in q_lower:
+                    u_int += 0.2
+            u_int = min(1.0, u_int)
+            
+            final_score = (0.5 * rel) + (0.2 * pop) + (0.2 * rec) + (0.1 * u_int)
+            r["hybrid_score"] = float(f"{final_score:.3f}")
+            
+            is_exact = (q_lower == title_lower) or any(q_lower == str(a).lower() for a in r.get("authors", []))
+            
+            if is_exact or rel > 0.85:
+                exact_matches.append(r)
+            elif rel > 0.4:
+                related_results.append(r)
+            else:
+                recommended.append(r)
+                
+        exact_matches.sort(key=lambda x: x["hybrid_score"], reverse=True)
+        related_results.sort(key=lambda x: x["hybrid_score"], reverse=True)
+        recommended.sort(key=lambda x: x["hybrid_score"], reverse=True)
+        
+        if not recommended and len(related_results) > 6:
+            split_idx = len(related_results) // 2
+            recommended = related_results[split_idx:]
+            related_results = related_results[:split_idx]
+            
+        if not related_results and len(recommended) > 6:
+            split_idx = len(recommended) // 2
+            related_results = recommended[:split_idx]
+            recommended = recommended[split_idx:]
+
         return jsonify({
-            "results": results,
+            "exact_matches": exact_matches,
+            "related_results": related_results,
+            "recommended": recommended,
             "author_profile": author_profile
         })
     else:
