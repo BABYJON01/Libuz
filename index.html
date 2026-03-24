@@ -1487,7 +1487,6 @@
 
         // Render search results
         const renderResults = (data) => {
-            const results = data.results || [];
             resultsList.innerHTML = '';
 
             // Handle Author Profile
@@ -1509,66 +1508,82 @@
                 authorContainer.style.display = 'none';
             }
 
-            if (results.length === 0) {
+            const exact = data.exact_matches || [];
+            const related = data.related_results || [];
+            const recommended = data.recommended || [];
+
+            if (exact.length === 0 && related.length === 0 && recommended.length === 0) {
                 resultsList.innerHTML = '<div style="text-align:center;color:#64748b;margin-top:20px;">Maqola topilmadi</div>';
                 return;
             }
 
-            results.forEach(paper => {
-                const el = document.createElement('div');
-                el.className = 'result-item';
+            const renderSection = (title, items, icon, color) => {
+                if (!items || items.length === 0) return;
+                
+                const sectionHeader = document.createElement('div');
+                sectionHeader.style.cssText = `margin: 16px 0 10px 0; font-size: 13px; font-weight: 600; color: ${color}; display: flex; align-items: center; gap: 8px; text-transform: uppercase; letter-spacing: 0.5px; border-bottom: 1px solid rgba(255,255,255,0.08); padding-bottom: 8px;`;
+                sectionHeader.innerHTML = `<span style="font-size:16px;">${icon}</span> ${title} <span style="font-size:11px; color:var(--text-color); opacity: 0.8; background:var(--item-hover-bg); padding:2px 8px; border-radius:12px; margin-left:auto;">${items.length} ta natija</span>`;
+                resultsList.appendChild(sectionHeader);
 
-                // Format authors
-                const authorsStr = paper.authors && paper.authors.length > 0
-                    ? paper.authors.join(', ')
-                    : 'Muallif noma\'lum';
+                items.forEach(paper => {
+                    const el = document.createElement('div');
+                    el.className = 'result-item';
 
-                el.innerHTML = `
-                    <div class="paper-title">${paper.title}</div>
-                    <div class="paper-meta">
-                        <span>${paper.publication_year || 'Yil noma\'lum'}</span>
-                        <span>
-                            ${paper.source === 'CyberLeninka' ? '<span style="color:#10b981; margin-right:8px;">[CyberLeninka]</span>' : ''}
-                            <b style="color:var(--accent)">${paper.cited_by_count}</b> iqtiboslar
-                        </span>
-                    </div>
-                    <div class="paper-authors">${authorsStr}</div>
-                `;
+                    const authorsStr = paper.authors && paper.authors.length > 0
+                        ? paper.authors.join(', ')
+                        : 'Muallif noma\'lum';
 
-                el.onclick = () => {
-                    // Update details panel
-                    document.getElementById('d-title').textContent = paper.title;
-                    document.getElementById('d-year').textContent = paper.publication_year || 'Yil noma\'lum';
-                    document.getElementById('d-cites').textContent = paper.cited_by_count;
-                    document.getElementById('d-authors').textContent = authorsStr;
+                    el.innerHTML = `
+                        <div class="paper-title">${paper.title}</div>
+                        <div class="paper-meta">
+                            <span>${paper.publication_year || 'Yil noma\'lum'}</span>
+                            <span>
+                                ${paper.source === 'CyberLeninka' ? '<span style="color:#10b981; margin-right:8px;">[CyberLeninka]</span>' : ''}
+                                <b style="color:var(--accent)">${paper.cited_by_count}</b> iqtiboslar
+                            </span>
+                        </div>
+                        <div class="paper-authors">${authorsStr}</div>
+                    `;
 
-                    const downloadBtn = document.getElementById('d-download-btn');
-                    const noDownload = document.getElementById('d-no-download');
-                    const exploreBtn = document.getElementById('d-explore-btn');
+                    el.onclick = () => {
+                        // Update details panel
+                        document.getElementById('d-title').textContent = paper.title;
+                        document.getElementById('d-year').textContent = paper.publication_year || 'Yil noma\'lum';
+                        document.getElementById('d-cites').textContent = paper.cited_by_count;
+                        document.getElementById('d-authors').textContent = authorsStr;
 
-                    if (paper.download_url) {
-                        downloadBtn.href = paper.download_url;
-                        downloadBtn.style.display = 'inline-flex';
-                        noDownload.style.display = 'none';
-                    } else {
-                        downloadBtn.style.display = 'none';
-                        noDownload.style.display = 'inline-block';
-                    }
+                        const downloadBtn = document.getElementById('d-download-btn');
+                        const noDownload = document.getElementById('d-no-download');
+                        const exploreBtn = document.getElementById('d-explore-btn');
 
-                    if (paper.id && (paper.id.startsWith('https://openalex.org/W') || paper.id.startsWith('W'))) {
-                        exploreBtn.style.display = 'flex';
-                        exploreBtn.onclick = () => {
-                            loadPaperNetwork(paper.id);
-                        };
-                    } else {
-                        exploreBtn.style.display = 'none';
-                    }
+                        if (paper.download_url) {
+                            downloadBtn.href = paper.download_url;
+                            downloadBtn.style.display = 'inline-flex';
+                            noDownload.style.display = 'none';
+                        } else {
+                            downloadBtn.style.display = 'none';
+                            noDownload.style.display = 'inline-block';
+                        }
 
-                    detailsPanel.style.display = 'block';
-                };
+                        if (paper.id && (paper.id.startsWith('https://openalex.org/W') || paper.id.startsWith('W'))) {
+                            exploreBtn.style.display = 'flex';
+                            exploreBtn.onclick = () => {
+                                loadPaperNetwork(paper.id);
+                            };
+                        } else {
+                            exploreBtn.style.display = 'none';
+                        }
 
-                resultsList.appendChild(el);
-            });
+                        detailsPanel.style.display = 'block';
+                    };
+
+                    resultsList.appendChild(el);
+                });
+            };
+
+            renderSection("Aniq mosliklar", exact, "🎯", "#3b82f6");
+            renderSection("Sizni qiziqtirishi mumkin", related, "💡", "#8b5cf6");
+            renderSection("Tavsiya etiladi", recommended, "⭐", "#10b981");
         };
 
         // Perform search
@@ -1616,6 +1631,10 @@
             if (hTo) params.append('max_cites', hTo);
             if (workType) params.append('work_type', workType);
             sjr.forEach(v => params.append('sjr[]', v));
+            
+            if (typeof currentUser !== 'undefined' && currentUser && currentUser.username) {
+                params.append('username', currentUser.username);
+            }
 
             try {
                 const res = await fetch(`${API_BASE}/search?${params.toString()}`);
@@ -1626,8 +1645,9 @@
                     showResultsBtn.style.display = 'block'; // Make back button visible for future uses
 
                     // Auto-load the graph network for the very first result to instantly show a Litmaps-like visualization
-                    if (data.results && data.results.length > 0) {
-                        const firstPaper = data.results[0];
+                    const allResults = [...(data.exact_matches || []), ...(data.related_results || []), ...(data.recommended || [])];
+                    if (allResults.length > 0) {
+                        const firstPaper = allResults[0];
                         const authorsStr = firstPaper.authors && firstPaper.authors.length > 0
                             ? firstPaper.authors.join(', ')
                             : 'Muallif noma\'lum';
