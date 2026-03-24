@@ -1073,22 +1073,34 @@
         let edgesDataset = new vis.DataSet([]);
 
         // Initialize Vanta.js WebGL Interactive Background
-        window.vantaEffect = VANTA.NET({
-            el: "#vanta-bg",
-            mouseControls: true,
-            touchControls: true,
-            gyroControls: false,
-            minHeight: 200.00,
-            minWidth: 200.00,
-            scale: 1.00,
-            scaleMobile: 1.00,
-            color: 0x3b82f6, // Accent blue 
-            backgroundColor: 0x0f172a, // Slate-900 matching the root --bg-color
-            points: 12.00,
-            maxDistance: 22.00,
-            spacing: 16.00,
-            showDots: true
-        });
+        const isMobileDevice = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        
+        if (!isMobileDevice) {
+            try {
+                window.vantaEffect = VANTA.NET({
+                    el: "#vanta-bg",
+                    mouseControls: true,
+                    touchControls: true,
+                    gyroControls: false,
+                    minHeight: 200.00,
+                    minWidth: 200.00,
+                    scale: 1.00,
+                    scaleMobile: 1.00,
+                    color: 0x3b82f6, // Accent blue 
+                    backgroundColor: 0x0f172a, // Slate-900 matching the root --bg-color
+                    points: 12.00,
+                    maxDistance: 22.00,
+                    spacing: 16.00,
+                    showDots: true
+                });
+            } catch(e) {
+                console.warn("WebGL Vanta failed to initialize", e);
+                document.getElementById("vanta-bg").style.display = "none";
+            }
+        } else {
+            // Disable heavy 3D rendering on mobile devices entirely to prevent reload loops
+            document.getElementById("vanta-bg").style.display = "none";
+        }
 
         // Theme Logic
         function initTheme() {
