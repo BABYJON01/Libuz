@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=1280">
+    <meta name="viewport" content="width=1280, initial-scale=0.1, user-scalable=yes">
     <title>LibUZ - Ilmiy Maqolalar va Mualliflar Tarmog'i</title>
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
@@ -52,15 +52,21 @@
             font-family: 'Inter', sans-serif;
         }
 
+        html {
+            width: 1280px;
+            height: 100%;
+            overflow-x: auto;
+            overflow-y: hidden;
+        }
+
         body {
             background-color: var(--bg-color);
             color: var(--text-color);
-            position: absolute;
-            top: 0; left: 0; right: 0; bottom: 0;
+            width: 1280px;
+            height: 100%;
             display: flex;
-            min-width: 1280px;
-            overflow-x: auto;
-            overflow-y: hidden;
+            overflow: hidden;
+            position: relative;
         }
 
         /* Sidebar Styling (Glassmorphism) */
@@ -675,10 +681,9 @@
 
         /* WebGL Interactive Background */
         #vanta-bg {
-            position: fixed;
-            width: 100%;
+            position: absolute;
+            width: 1280px;
             height: 100%;
-            min-width: 1280px;
             top: 0;
             left: 0;
             z-index: 1;
