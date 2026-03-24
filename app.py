@@ -1225,7 +1225,7 @@ def search_wikidata_entity(name):
     url = f"https://www.wikidata.org/w/api.php?action=wbsearchentities&search={urllib.parse.quote(name)}&language=uz&uselang=en&format=json"
     headers = {'User-Agent': 'LibUZ/1.0 (https://libuz.vercel.app)'}
     try:
-        response = requests.get(url, headers=headers, timeout=5)
+        response = requests.get(url, headers=headers, timeout=3)
         if response.status_code == 200:
             data = response.json()
             if data.get("search") and len(data["search"]) > 0:
@@ -1276,7 +1276,7 @@ def get_wikidata_network(entity_id, max_nodes=30):
         'Accept': 'application/sparql-results+json'
     }
     try:
-        response = requests.get(url, params={'query': query}, headers=headers, timeout=10)
+        response = requests.get(url, params={'query': query}, headers=headers, timeout=4)
         if response.status_code == 200:
             data = response.json()
             WIKIDATA_CACHE[cache_key] = data
