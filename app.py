@@ -487,6 +487,32 @@ def suggest_papers():
         return jsonify(response.json())
     return jsonify({"results": []})
 
+import re
+
+def normalize_text(text):
+    if type(text) is not str:
+        text = str(text)
+    # Lowercase and remove multiple spaces
+    text = text.lower().strip()
+    text = re.sub(r'\s+', ' ', text)
+    # Strip punctuation except alphanumeric and spaces
+    text = re.sub(r'[^\w\s]', '', text)
+    return text
+
+SYNONYMS = {
+    "kitob": "book", "book": "kitob",
+    "dasturlash": "programming", "programming": "dasturlash",
+    "suniy intellekt": "ai", "ai": "suniy intellekt", "artificial intelligence": "suniy intellekt",
+    "o'qituvchi": "teacher", "teacher": "o'qituvchi",
+    "iqtisodiyot": "economics", "economics": "iqtisodiyot",
+    "tibbiyot": "medicine", "medicine": "tibbiyot",
+    "falsafa": "philosophy", "philosophy": "falsafa",
+    "san'at": "art", "art": "san'at",
+    "talim": "education", "education": "talim",
+    "huquq": "law", "law": "huquq",
+    "texnologiya": "technology", "technology": "texnologiya"
+}
+
 def uz_transliterate(text):
     if not text: return text
     
@@ -645,17 +671,21 @@ def search_papers():
         results = []
         
         def process_work(work):
-            original_title = work.get("title", "Untitled")
+            original_title = work.get("title") or "Untitled"
             uz_title = safe_translate(original_title, 'uz')
             
             oa_url = None
             if work.get("open_access", {}).get("is_oa"):
                 oa_url = work.get("open_access", {}).get("oa_url")
+                
+            concepts = [c.get("display_name", "") for c in work.get("concepts", [])[:5]]
             
             return {
                 "id": work.get("id"),
                 "title": uz_title,
                 "original_title": str(original_title),
+                "description": "", # OpenAlex abstract comes inverted, skip for brevity, rely on title/concepts
+                "tags": concepts,
                 "publication_year": work.get("publication_year"),
                 "cited_by_count": work.get("cited_by_count", 0),
                 "relevance_score": float(work.get("relevance_score") or 0),
@@ -682,43 +712,97 @@ def search_papers():
             results.extend(books)
 
         # Hybrid Recommendation Ranking
-        max_cites = max([r.get('cited_by_count', 0) for r in results] + [1])
-        max_rel = max([r.get('relevance_score', 0) for r in results] + [1.0])
+        max_cites = max([int(r.get('cited_by_count') or 0) for r in results] + [1])
+        max_rel = max([float(r.get('relevance_score') or 0) for r in results] + [1.0])
         
         exact_matches = []
         related_results = []
         recommended = []
         
-        q_lower = query.lower()
+        # NLP Base Prep
+        q_norm = normalize_text(query)
+        q_translit = normalize_text(uz_transliterate(query))
+        q_words = set(q_norm.split())
+        q_synonyms = set()
+        for w in q_words:
+            if w in SYNONYMS:
+                q_synonyms.add(SYNONYMS[w])
         
         for r in results:
-            rel = r.get("relevance_score", 0) / max_rel
-            title_lower = r.get("original_title", "").lower()
+            t_norm = normalize_text(r.get("original_title", ""))
+            d_norm = normalize_text(r.get("description", ""))
+            tags_norm = [normalize_text(t) for t in r.get("tags", [])]
             
-            if q_lower in title_lower:
-                rel = max(rel, 0.9)
+            nlp_score = 0
+            reasons = []
+            
+            def check_match(text, weight_name, multiplier):
+                nonlocal nlp_score
+                if not text: return
                 
-            pop = r.get("cited_by_count", 0) / max_cites
+                # Exact script
+                if q_norm and q_norm in text:
+                    nlp_score += 5 * multiplier
+                    reasons.append(f"Exact match (+5) in {weight_name}")
+                # Translit
+                elif q_translit and q_translit in text and q_translit != q_norm:
+                    nlp_score += 4 * multiplier
+                    reasons.append(f"Translit match (+4) in {weight_name}")
+                # Synonyms
+                else:
+                    syn_matched = False
+                    for syn in q_synonyms:
+                        if syn and syn in text:
+                            nlp_score += 3 * multiplier
+                            reasons.append(f"Synonym '{syn}' (+3) in {weight_name}")
+                            syn_matched = True
+                            break
+                    # Partial
+                    if not syn_matched:
+                        for w in q_words:
+                            if len(w) > 3 and w in text:
+                                nlp_score += 2 * multiplier
+                                reasons.append(f"Partial '{w}' (+2) in {weight_name}")
+                                break
+                                
+            check_match(t_norm, "Title", 3)
+            check_match(d_norm, "Description", 2)
+            for tag in tags_norm:
+                check_match(tag, "Tags", 1)
+                
+            # Filter repeated reasons
+            unique_reasons = []
+            for reason in reasons:
+                if reason not in unique_reasons: unique_reasons.append(reason)
+                
+            r["match_reason"] = " | ".join(unique_reasons) if unique_reasons else "Semantic vector API fallback"
+            r["nlp_score"] = nlp_score
+            
+            # Blend into hybrid API score
+            api_rel = float(r.get("relevance_score") or 0) / max_rel
+            norm_nlp = min(1.0, nlp_score / 15.0)
+            final_rel = max(api_rel, norm_nlp)
+            
+            pop = float(r.get("cited_by_count", 0) or 0) / max_cites
             
             year = r.get("publication_year")
             if not str(year).isdigit(): year = 2000
             year = int(year)
-            rec = max(0, min(1, (year - 1950) / 75))
+            rec = max(0, min(1, (year - 1950) / 75.0))
             
             u_int = 0
             for pq in user_past_queries:
-                if pq in title_lower or pq in q_lower:
+                if normalize_text(pq) in t_norm or normalize_text(pq) in q_norm:
                     u_int += 0.2
             u_int = min(1.0, u_int)
             
-            final_score = (0.5 * rel) + (0.2 * pop) + (0.2 * rec) + (0.1 * u_int)
+            final_score = (0.5 * final_rel) + (0.2 * pop) + (0.2 * rec) + (0.1 * u_int)
             r["hybrid_score"] = float(f"{final_score:.3f}")
+            r["score"] = r["hybrid_score"] # Explicit score key mapping as requested
             
-            is_exact = (q_lower == title_lower) or any(q_lower == str(a).lower() for a in r.get("authors", []))
-            
-            if is_exact or rel > 0.85:
+            if nlp_score >= 15 or final_rel > 0.85 or (q_norm and q_norm == t_norm):
                 exact_matches.append(r)
-            elif rel > 0.4:
+            elif nlp_score > 0 or final_rel > 0.4:
                 related_results.append(r)
             else:
                 recommended.append(r)
