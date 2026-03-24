@@ -499,6 +499,19 @@ def normalize_text(text):
     text = re.sub(r'[^\w\s]', '', text)
     return text
 
+def letter_normalize(text):
+    if type(text) is not str: text = str(text)
+    t = text.lower()
+    t = t.replace("x", "h").replace("х", "ҳ").replace("ҳ", "х")
+    t = t.replace("q", "k").replace("қ", "к")
+    t = t.replace("o'", "o").replace("o‘", "o").replace("o’", "o").replace("o`", "o").replace("ў", "о")
+    t = t.replace("g'", "g").replace("g‘", "g").replace("g’", "g").replace("g`", "g").replace("ғ", "г")
+    return t
+
+def is_exact_word(query, text):
+    if not query or not text: return False
+    return bool(re.search(r'\b' + re.escape(query) + r'\b', text))
+
 SYNONYMS = {
     "kitob": "book", "book": "kitob",
     "dasturlash": "programming", "programming": "dasturlash",
@@ -722,6 +735,7 @@ def search_papers():
         # NLP Base Prep
         q_norm = normalize_text(query)
         q_translit = normalize_text(uz_transliterate(query))
+        q_letter_norm = letter_normalize(q_translit)
         q_words = set(q_norm.split())
         q_synonyms = set()
         for w in q_words:
@@ -729,9 +743,12 @@ def search_papers():
                 q_synonyms.add(SYNONYMS[w])
         
         for r in results:
-            t_norm = normalize_text(r.get("original_title", ""))
-            d_norm = normalize_text(r.get("description", ""))
-            tags_norm = [normalize_text(t) for t in r.get("tags", [])]
+            t_orig = r.get("original_title", "")
+            d_orig = r.get("description", "")
+            
+            t_norm = normalize_text(t_orig)
+            d_norm = normalize_text(d_orig)
+            tags_orig = r.get("tags", [])
             
             nlp_score = 0
             reasons = []
@@ -740,19 +757,27 @@ def search_papers():
                 nonlocal nlp_score
                 if not text: return
                 
-                # Exact script
-                if q_norm and q_norm in text:
+                text_norm = normalize_text(text)
+                text_lat = normalize_text(uz_transliterate(text))
+                text_let_norm = letter_normalize(text_lat)
+                
+                # Exact script word match
+                if is_exact_word(q_norm, text_norm):
                     nlp_score += 5 * multiplier
                     reasons.append(f"Exact match (+5) in {weight_name}")
-                # Translit
-                elif q_translit and q_translit in text and q_translit != q_norm:
+                # Translit word match
+                elif is_exact_word(q_translit, text_lat) and q_translit != q_norm:
                     nlp_score += 4 * multiplier
                     reasons.append(f"Translit match (+4) in {weight_name}")
+                # Phonetic/Normalized word match
+                elif is_exact_word(q_letter_norm, text_let_norm) and q_letter_norm != q_translit:
+                    nlp_score += 4 * multiplier
+                    reasons.append(f"Normalized match (+4) in {weight_name}")
                 # Synonyms
                 else:
                     syn_matched = False
                     for syn in q_synonyms:
-                        if syn and syn in text:
+                        if is_exact_word(syn, text_norm) or is_exact_word(syn, text_lat):
                             nlp_score += 3 * multiplier
                             reasons.append(f"Synonym '{syn}' (+3) in {weight_name}")
                             syn_matched = True
@@ -760,14 +785,14 @@ def search_papers():
                     # Partial
                     if not syn_matched:
                         for w in q_words:
-                            if len(w) > 3 and w in text:
+                            if len(w) > 3 and (w in text_norm or w in text_lat or letter_normalize(w) in text_let_norm):
                                 nlp_score += 2 * multiplier
                                 reasons.append(f"Partial '{w}' (+2) in {weight_name}")
                                 break
                                 
-            check_match(t_norm, "Title", 3)
-            check_match(d_norm, "Description", 2)
-            for tag in tags_norm:
+            check_match(t_orig, "Title", 3)
+            check_match(d_orig, "Description", 2)
+            for tag in tags_orig:
                 check_match(tag, "Tags", 1)
                 
             # Filter repeated reasons
