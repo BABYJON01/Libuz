@@ -3,7 +3,7 @@
 
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=1280">
     <title>LibUZ - Ilmiy Maqolalar va Mualliflar Tarmog'i</title>
     <script type="text/javascript" src="https://unpkg.com/vis-network/standalone/umd/vis-network.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r134/three.min.js"></script>
@@ -57,7 +57,9 @@
             color: var(--text-color);
             height: 100vh;
             display: flex;
-            overflow: hidden;
+            min-width: 1280px;
+            overflow-x: auto;
+            overflow-y: hidden;
         }
 
         /* Sidebar Styling (Glassmorphism) */
